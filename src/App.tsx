@@ -26,6 +26,7 @@ import { LandingFooter } from './components/landing/LandingFooter';
 
 // Dashboard components
 import { DashboardLayout } from './components/dashboard/DashboardLayout';
+import { WelcomeSection } from './components/dashboard/WelcomeSection';
 import { NextBestStepHero } from './components/dashboard/NextBestStepHero';
 import { CareerReadiness } from './components/dashboard/CareerReadiness';
 import { RoadmapPreview } from './components/dashboard/RoadmapPreview';
@@ -144,6 +145,22 @@ export const App: React.FC = () => {
         console.error('Failed to persist project to backend:', err);
         setSaveStatus('Notice: Saved locally (backend offline)');
         setTimeout(() => setSaveStatus(null), 3000);
+      }
+    }
+  };
+
+  // Handler to delete a project and persist to PostgreSQL
+  const handleDeleteProject = async (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    if (isConnectedToBackend) {
+      try {
+        setSaveStatus('Removing project...');
+        await api.deleteProject(projectId);
+        await loadDataFromBackend();
+        setSaveStatus('Project removed');
+        setTimeout(() => setSaveStatus(null), 2000);
+      } catch (err) {
+        console.error('Failed to delete project:', err);
       }
     }
   };
@@ -288,39 +305,45 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* 1. Main Dashboard Command Center */}
+      {/* 1. Main Dashboard Home */}
       {currentTab === 'dashboard' && (
-        <div className="space-y-8">
-          {/* Next Best Step Hero Card */}
+        <div className="space-y-6">
+          {/* Welcome Section */}
+          <WelcomeSection
+            name={profile.name}
+            targetCareer={profile.targetCareer}
+          />
+
+          {/* Next Best Step Hero Card (Primary Focus) */}
           <NextBestStepHero
             step={nextStep}
             onCriteriaToggle={handleToggleCriterion}
           />
 
-          {/* Career Readiness Progress Summary */}
+          {/* Simple Progress Summary */}
           <CareerReadiness
             readinessPercentage={currentReadiness}
             totalSkills={skillStats.total}
             completedSkills={skillStats.completed}
-            inProgressSkills={skillStats.inProgress}
-            evidencedSkills={skillStats.projectEvidenced}
-            notStartedSkills={skillStats.notStarted}
+            projectCount={projects.length}
+            currentPhaseTitle={`Phase ${currentActivePhase.phaseNumber}: ${currentActivePhase.title}`}
           />
 
           {/* Current Learning Phase Preview */}
           <RoadmapPreview
             currentPhase={currentActivePhase}
             onViewFullRoadmap={() => setCurrentTab('roadmap')}
+            onSkillClick={(skill) => handleSkillUpdate(skill.id, { status: skill.status === 'completed' ? 'in-progress' : 'completed' })}
           />
 
-          {/* Recent Project Evidence */}
+          {/* Recent Projects */}
           <ProjectEvidence
             projects={projects}
             onAddProject={() => setIsAddEvidenceModalOpen(true)}
             onViewAllProjects={() => setCurrentTab('projects')}
           />
 
-          {/* Modal to add project evidence directly from Dashboard */}
+          {/* Modal to add project directly from Dashboard */}
           <AddProjectModal
             isOpen={isAddEvidenceModalOpen}
             onClose={() => setIsAddEvidenceModalOpen(false)}
@@ -345,6 +368,7 @@ export const App: React.FC = () => {
           projects={projects}
           availableSkills={allSkills}
           onAddProject={handleAddProject}
+          onDeleteProject={handleDeleteProject}
         />
       )}
 

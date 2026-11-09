@@ -139,3 +139,4 @@ export async function updateSkill(req: Request, res: Response) {
     });
   }
 }
+

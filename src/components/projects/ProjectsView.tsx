@@ -3,9 +3,9 @@ import { Project, Skill } from '../../types';
 import { 
   ExternalLink, 
   Github, 
-  ShieldCheck, 
   Plus, 
-  Search
+  Search,
+  Trash2
 } from 'lucide-react';
 import { AddProjectModal } from './AddProjectModal';
 
@@ -13,12 +13,14 @@ interface ProjectsViewProps {
   projects: Project[];
   availableSkills: Skill[];
   onAddProject: (newProject: Project) => void;
+  onDeleteProject?: (projectId: string) => void;
 }
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
   projects,
   availableSkills,
-  onAddProject
+  onAddProject,
+  onDeleteProject
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,89 +29,80 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     const q = searchQuery.toLowerCase();
     return (
       p.name.toLowerCase().includes(q) ||
-      p.tagline.toLowerCase().includes(q) ||
+      (p.tagline && p.tagline.toLowerCase().includes(q)) ||
       p.technologies.some(t => t.toLowerCase().includes(q)) ||
       p.evidencedSkills.some(s => s.toLowerCase().includes(q))
     );
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-7 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-400 px-2.5 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20">
-              Evidence Ledger
-            </span>
-            <span className="text-xs text-slate-400 font-medium">{projects.length} Verified Deliverables</span>
-          </div>
-          <h2 className="text-2xl font-black text-white mt-1.5 tracking-tight">
-            Project Evidence & Artifacts
+          <h2 className="text-xl font-bold text-white tracking-tight">
+            My Projects
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Every repository here directly validates technical competencies in your roadmap. Recruiters and engineering managers can verify clean architecture, git commits, and live deployments.
+          <p className="text-sm text-slate-400 mt-0.5">
+            Real things you have built to practice and demonstrate your skills.
           </p>
         </div>
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-brand-500/25 transition-all self-stretch md:self-auto justify-center"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 font-semibold text-xs sm:text-sm transition-colors self-start sm:self-auto shrink-0 shadow-sm"
         >
           <Plus className="w-4 h-4 text-slate-950" />
-          <span>Add Project Evidence</span>
+          <span>Add Project</span>
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by project, tech, or evidenced skill..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
-          />
-        </div>
-
-        <span className="text-xs text-slate-400 hidden sm:inline">
-          Showing {filteredProjects.length} of {projects.length} projects
-        </span>
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by project name, tech, or skill..."
+          className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
+        />
       </div>
 
-      {/* Projects Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredProjects.map((proj) => {
-          return (
+      {/* Projects Grid */}
+      {filteredProjects.length === 0 ? (
+        <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-xl text-slate-400 text-sm">
+          No projects match your search.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredProjects.map((proj) => (
             <div
               key={proj.id}
-              className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 flex flex-col justify-between transition-all group shadow-lg"
+              className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700 transition-colors"
             >
               <div>
-                {/* Header status & actions */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      {proj.status}
-                    </span>
-                    {proj.featured && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                        Featured Showcase
-                      </span>
+                {/* Header with Title and Links */}
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <div>
+                    <h3 className="text-base font-bold text-white">
+                      {proj.name}
+                    </h3>
+                    {proj.tagline && (
+                      <p className="text-xs text-brand-300 font-medium mt-0.5">
+                        {proj.tagline}
+                      </p>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {proj.githubUrl && (
                       <a
                         href={proj.githubUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors border border-slate-800"
-                        title="Open GitHub"
+                        className="text-slate-400 hover:text-white transition-colors p-1"
+                        title="GitHub Repository"
                       >
                         <Github className="w-4 h-4" />
                       </a>
@@ -119,75 +112,68 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         href={proj.liveDemoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-1.5 text-slate-400 hover:text-brand-300 hover:bg-slate-800 rounded-lg transition-colors border border-slate-800"
+                        className="text-slate-400 hover:text-brand-300 transition-colors p-1"
                         title="Live Demo"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
+                    {onDeleteProject && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remove project "${proj.name}"?`)) {
+                            onDeleteProject(proj.id);
+                          }
+                        }}
+                        className="text-slate-500 hover:text-rose-400 transition-colors p-1"
+                        title="Delete Project"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                {/* Title & Tagline */}
-                <h3 className="text-lg font-bold text-white group-hover:text-brand-300 transition-colors">
-                  {proj.name}
-                </h3>
-                <p className="text-xs font-semibold text-brand-400 mt-0.5">
-                  {proj.tagline}
-                </p>
-
                 {/* Description */}
-                <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">
+                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
                   {proj.description}
                 </p>
 
                 {/* Technologies */}
-                <div className="mt-5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    Technologies & Libraries
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {proj.technologies.map(tech => (
-                      <span
-                        key={tech}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-slate-950 text-slate-200 border border-slate-800 font-medium"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {proj.technologies.map(tech => (
+                    <span
+                      key={tech}
+                      className="text-[11px] px-2 py-0.5 rounded bg-slate-950 text-slate-300 border border-slate-800"
+                    >
+                      {tech}
+                    </span>
+                  ))}
                 </div>
+              </div>
 
-                {/* Evidenced Skills */}
-                <div className="mt-5 pt-4 border-t border-slate-800/80">
-                  <span className="text-[11px] font-bold text-brand-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                    <ShieldCheck className="w-4 h-4 text-brand-400" />
-                    Verified Competencies Evidenced ({proj.evidencedSkills.length})
+              {/* Evidenced Skills */}
+              {proj.evidencedSkills.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-slate-800/80">
+                  <span className="text-[11px] text-slate-400 block mb-1">
+                    Skills practiced:
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {proj.evidencedSkills.map(skill => (
                       <span
                         key={skill}
-                        className="text-xs font-medium px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-300 border border-brand-500/20"
+                        className="text-[11px] font-medium px-2 py-0.5 rounded bg-brand-500/10 text-brand-300 border border-brand-500/20"
                       >
                         {skill}
                       </span>
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* Bottom Metrics */}
-              {proj.metrics && (
-                <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                  <span className="font-medium text-slate-300">{proj.metrics}</span>
-                  <span className="font-mono text-slate-500 text-[11px]">{proj.completionDate}</span>
-                </div>
               )}
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Add Project Modal */}
       <AddProjectModal

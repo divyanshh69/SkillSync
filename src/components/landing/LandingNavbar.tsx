@@ -42,13 +42,13 @@ export const LandingNavbar: React.FC<LandingNavbarProps> = ({
             onClick={onExploreDemo}
             className="hover:text-white transition-colors"
           >
-            Roadmap Preview
+            My Roadmap
           </button>
           <button 
             onClick={onExploreDemo}
             className="hover:text-white transition-colors"
           >
-            Evidence Ledger
+            My Projects
           </button>
         </nav>
 

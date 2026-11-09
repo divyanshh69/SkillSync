@@ -7,3 +7,4 @@ router.get('/', getSkills);
 router.patch('/:id', updateSkill);
 
 export default router;
+

@@ -120,3 +120,4 @@ model PhaseSkill {
 
   @@unique([phaseId, skillId])
 }
+
