@@ -8,6 +8,7 @@ interface DashboardLayoutProps {
   onSelectTab: (tab: NavigationTab) => void;
   onExitToLanding: () => void;
   profile: CareerProfile;
+  dbConnected?: boolean;
   children: React.ReactNode;
 }
 
@@ -16,6 +17,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onSelectTab,
   onExitToLanding,
   profile,
+  dbConnected,
   children
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -70,10 +72,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
                   {getPageTitle(currentTab)}
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-brand-300 border border-slate-700">
-                  <Sparkles className="w-3 h-3 text-brand-400" />
-                  Prototype Demo
-                </span>
+                {dbConnected ? (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    PostgreSQL Connected
+                  </span>
+                ) : (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-brand-300 border border-slate-700">
+                    <Sparkles className="w-3 h-3 text-brand-400" />
+                    Prototype Demo
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 hidden md:block">
                 {getPageSubtitle(currentTab)}

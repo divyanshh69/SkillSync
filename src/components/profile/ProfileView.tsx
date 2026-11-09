@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CareerProfile } from '../../types';
 import { 
   GraduationCap, 
@@ -20,6 +20,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [weeklyGoal, setWeeklyGoal] = useState(profile.weeklyGoalHours);
   const [hoursDone, setHoursDone] = useState(profile.hoursCompletedThisWeek);
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    setTargetRole(profile.targetCareer);
+    setWeeklyGoal(profile.weeklyGoalHours);
+    setHoursDone(profile.hoursCompletedThisWeek);
+  }, [profile.targetCareer, profile.weeklyGoalHours, profile.hoursCompletedThisWeek]);
 
   const careerTracks = [
     "Full-Stack Developer",

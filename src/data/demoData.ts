@@ -463,3 +463,4 @@ export function calculateSkillStats(phases: RoadmapPhase[]) {
     calculatedReadiness: Math.min(calculatedReadiness, 100)
   };
 }
+

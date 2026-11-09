@@ -92,3 +92,19 @@ export interface CompanionMessage {
 }
 
 export type NavigationTab = 'dashboard' | 'roadmap' | 'projects' | 'companion' | 'profile';
+
+export interface Toast {
+  id: string;
+  type: 'success' | 'info' | 'bonus';
+  message: string;
+}
+
+export interface CareerTrackConfig {
+  id: string;
+  name: string;
+  subtitle: string;
+  baseReadiness: number;
+  nextBestStep: NextBestStep;
+}
+
+

@@ -100,3 +100,4 @@ export const FeaturesGrid: React.FC = () => {
     </section>
   );
 };
+

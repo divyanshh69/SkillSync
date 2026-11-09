@@ -240,3 +240,4 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onExploreDemo, onStart
     </div>
   );
 };
+

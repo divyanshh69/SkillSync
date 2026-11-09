@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SkillStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id                      String        @id @default(cuid())
+  name                    String
+  email                   String        @unique
+  handle                  String?
+  avatarUrl               String?
+  bio                     String?
+  education               String?
+  targetCareer            String        @default("Full-Stack Developer")
+  weeklyGoalHours         Float         @default(15)
+  hoursCompletedThisWeek  Float         @default(0)
+  targetCompletionQuarter String?       @default("Q3 2026")
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  userSkills              UserSkill[]
+  projects                Project[]
+}
+
+model Skill {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  category    String
+  description String?
+  importance  String         @default("Essential")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  userSkills   UserSkill[]
+  projectSkills ProjectSkill[]
+  phaseSkills  PhaseSkill[]
+}
+
+model UserSkill {
+  id                 String      @id @default(cuid())
+  userId             String
+  skillId            String
+  status             SkillStatus @default(NOT_STARTED)
+  isProjectEvidenced Boolean     @default(false)
+  masteryScore       Int?        @default(0)
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  userId         String
+  name           String
+  tagline        String?
+  description    String
+  githubUrl      String?
+  liveDemoUrl    String?
+  technologies   String[]       @default([])
+  status         String         @default("Completed")
+  metrics        String?
+  completionDate String?
+  featured       Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectSkills  ProjectSkill[]
+}
+
+model ProjectSkill {
+  id        String   @id @default(cuid())
+  projectId String
+  skillId   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, skillId])
+}
+
+model RoadmapPhase {
+  id          String       @id @default(cuid())
+  phaseNumber Int          @unique
+  title       String
+  subtitle    String
+  status      String       @default("upcoming") // "completed" | "in-progress" | "upcoming"
+  description String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  phaseSkills PhaseSkill[]
+}
+
+model PhaseSkill {
+  id          String       @id @default(cuid())
+  phaseId     String
+  skillId     String
+  order       Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  phase RoadmapPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  skill Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([phaseId, skillId])
+}

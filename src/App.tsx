@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   demoProfile, 
   demoNextBestStep, 
@@ -15,6 +15,7 @@ import {
   NavigationTab,
   Skill 
 } from './types';
+import { api } from './services/api';
 
 // Landing Page components
 import { LandingNavbar } from './components/landing/LandingNavbar';
@@ -42,21 +43,51 @@ export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'landing' | 'app'>('landing');
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
 
-  // App Data State
+  // App Data State (initialized with demo data for instantaneous render)
   const [profile, setProfile] = useState<CareerProfile>(demoProfile);
   const [nextStep, setNextStep] = useState<NextBestStep>(demoNextBestStep);
   const [phases, setPhases] = useState<RoadmapPhase[]>(demoRoadmapPhases);
   const [projects, setProjects] = useState<Project[]>(demoProjects);
   const [isAddEvidenceModalOpen, setIsAddEvidenceModalOpen] = useState(false);
 
-  // Compute live skills statistics
+  // Backend connection & status state
+  const [isConnectedToBackend, setIsConnectedToBackend] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  // Hydrate data from PostgreSQL Backend API
+  const loadDataFromBackend = useCallback(async () => {
+    try {
+      const dashboardData = await api.getDashboard();
+      if (dashboardData) {
+        setProfile(dashboardData.profile);
+        if (dashboardData.roadmapPhases && dashboardData.roadmapPhases.length > 0) {
+          setPhases(dashboardData.roadmapPhases);
+        }
+        if (dashboardData.recentProjects) {
+          setProjects(dashboardData.recentProjects);
+        }
+        if (dashboardData.nextBestStep) {
+          setNextStep(dashboardData.nextBestStep);
+        }
+        setIsConnectedToBackend(true);
+      }
+    } catch (err) {
+      console.warn('Backend server not reachable or initializing; using local demo data fallback:', err);
+      setIsConnectedToBackend(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDataFromBackend();
+  }, [loadDataFromBackend]);
+
+  // Compute live skills statistics from the active roadmap phases
   const skillStats = useMemo(() => {
     return calculateSkillStats(phases);
   }, [phases]);
 
-  // Keep profile readiness synchronized with calculated readiness
+  // Keep profile readiness synchronized with calculated readiness + criteria bonus
   const currentReadiness = useMemo(() => {
-    // If criteria are completed in the next step, give bonus
     const completedCriteriaCount = nextStep.criteria.filter(c => c.completed).length;
     const bonus = completedCriteriaCount * 2;
     return Math.min(100, skillStats.calculatedReadiness + bonus);
@@ -72,11 +103,12 @@ export const App: React.FC = () => {
     }));
   };
 
-  // Handler to add a new project and update evidenced skills in roadmap
-  const handleAddProject = (newProject: Project) => {
+  // Handler to add a new project and persist it to PostgreSQL
+  const handleAddProject = async (newProject: Project) => {
+    // 1. Optimistic local state update for instant UI feedback
     setProjects(prev => [newProject, ...prev]);
 
-    // Mark the evidenced skills as project-evidenced in the roadmap
+    // Mark evidenced skills in roadmap phases
     setPhases(prevPhases => 
       prevPhases.map(phase => ({
         ...phase,
@@ -96,13 +128,72 @@ export const App: React.FC = () => {
         })
       }))
     );
+
+    // 2. Persist to PostgreSQL backend
+    if (isConnectedToBackend) {
+      try {
+        setSaveStatus('Saving project to database...');
+        const savedProject = await api.createProject(newProject);
+        if (savedProject) {
+          // Re-sync with backend to ensure all relationship counters match
+          await loadDataFromBackend();
+        }
+        setSaveStatus('Project saved successfully!');
+        setTimeout(() => setSaveStatus(null), 2500);
+      } catch (err) {
+        console.error('Failed to persist project to backend:', err);
+        setSaveStatus('Notice: Saved locally (backend offline)');
+        setTimeout(() => setSaveStatus(null), 3000);
+      }
+    }
   };
 
-  // Handler for updating student profile
-  const handleUpdateProfile = (updates: Partial<CareerProfile>) => {
+  // Handler for updating student profile and persisting to PostgreSQL
+  const handleUpdateProfile = async (updates: Partial<CareerProfile>) => {
+    // 1. Optimistic update
     setProfile(prev => ({ ...prev, ...updates }));
     if (updates.targetCareer) {
       setNextStep(prev => ({ ...prev, targetCareer: updates.targetCareer! }));
+    }
+
+    // 2. Persist to PostgreSQL
+    if (isConnectedToBackend) {
+      try {
+        setSaveStatus('Updating profile...');
+        await api.updateProfile(updates);
+        setSaveStatus('Profile updated in database!');
+        setTimeout(() => setSaveStatus(null), 2500);
+      } catch (err) {
+        console.error('Failed to persist profile update to backend:', err);
+      }
+    }
+  };
+
+  // Handler for updating individual skill status and persisting to PostgreSQL
+  const handleSkillUpdate = async (skillId: string, updates: Partial<Skill>) => {
+    // 1. Optimistic update in phases
+    setPhases(prevPhases =>
+      prevPhases.map(phase => ({
+        ...phase,
+        skills: phase.skills.map(skill => {
+          if (skill.id === skillId || skill.name === skillId) {
+            return { ...skill, ...updates };
+          }
+          return skill;
+        })
+      }))
+    );
+
+    // 2. Persist to PostgreSQL
+    if (isConnectedToBackend) {
+      try {
+        setSaveStatus(`Updating skill...`);
+        await api.updateSkill(skillId, updates);
+        setSaveStatus('Skill progress saved!');
+        setTimeout(() => setSaveStatus(null), 2000);
+      } catch (err) {
+        console.error('Failed to persist skill update to backend:', err);
+      }
     }
   };
 
@@ -183,11 +274,20 @@ export const App: React.FC = () => {
         setViewMode('landing');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }}
+      dbConnected={isConnectedToBackend}
       profile={{
         ...profile,
         readinessPercentage: currentReadiness
       }}
     >
+      {/* Toast Notification Banner for Database Sync */}
+      {saveStatus && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 border border-brand-500/40 text-brand-300 text-xs font-semibold shadow-2xl shadow-black/80 animate-fade-in">
+          <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
+          <span>{saveStatus}</span>
+        </div>
+      )}
+
       {/* 1. Main Dashboard Command Center */}
       {currentTab === 'dashboard' && (
         <div className="space-y-8">
@@ -234,6 +334,7 @@ export const App: React.FC = () => {
       {currentTab === 'roadmap' && (
         <RoadmapView
           phases={phases}
+          onSkillUpdate={handleSkillUpdate}
           onNavigateToProjects={() => setCurrentTab('projects')}
         />
       )}

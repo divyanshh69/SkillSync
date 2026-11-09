@@ -109,3 +109,4 @@ export const ImpactBadge: React.FC<{ impact: 'High' | 'Very High' | 'Critical' }
     </span>
   );
 };
+

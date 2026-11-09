@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RoadmapPhase, Skill } from '../../types';
+import { RoadmapPhase, Skill, SkillStatus } from '../../types';
 import { StatusBadge, EvidencedBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { 
@@ -11,11 +11,13 @@ import {
 
 interface RoadmapViewProps {
   phases: RoadmapPhase[];
+  onSkillUpdate?: (skillId: string, updates: Partial<Skill>) => void;
   onNavigateToProjects?: () => void;
 }
 
 export const RoadmapView: React.FC<RoadmapViewProps> = ({
   phases,
+  onSkillUpdate,
   onNavigateToProjects
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -236,9 +238,32 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
           subtitle={`${activeSkillModal.category} • ${activeSkillModal.importance} Competency`}
         >
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <span className="text-xs text-slate-400 font-medium">Status</span>
-              <StatusBadge status={activeSkillModal.status} />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+              <div>
+                <span className="text-xs text-slate-400 font-medium block">Current Status</span>
+                <span className="text-[11px] text-slate-500">Change status to update roadmap</span>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {(['completed', 'in-progress', 'not-started'] as SkillStatus[]).map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => {
+                      if (onSkillUpdate && activeSkillModal) {
+                        onSkillUpdate(activeSkillModal.id, { status: st });
+                        setActiveSkillModal({ ...activeSkillModal, status: st });
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      activeSkillModal.status === st
+                        ? 'bg-brand-500 text-slate-950 font-bold shadow-sm'
+                        : 'bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                    }`}
+                  >
+                    {st === 'completed' ? 'Completed' : st === 'in-progress' ? 'In Progress' : 'Not Started'}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
