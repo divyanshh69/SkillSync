@@ -178,6 +178,8 @@ export const App: React.FC = () => {
       try {
         setSaveStatus('Updating profile...');
         await api.updateProfile(updates);
+        // Re-sync with backend to get track-specific Next Best Step and calculations
+        await loadDataFromBackend();
         setSaveStatus('Profile updated in database!');
         setTimeout(() => setSaveStatus(null), 2500);
       } catch (err) {

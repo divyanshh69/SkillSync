@@ -27,3 +27,4 @@ export const WelcomeSection: React.FC<WelcomeSectionProps> = ({ name, targetCare
     </div>
   );
 };
+

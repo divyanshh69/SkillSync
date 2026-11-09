@@ -41,7 +41,7 @@ SkillSync replaces tutorial paralysis with an evidence-driven roadmap. It tracks
 ### 3. Integrated Subviews (Zero Dead Placeholders)
 - **My Roadmap (`/roadmap`)**: Full 5-phase breakdown from Frontend Foundations to Cloud Systems with category/status filters, plus interactive status changing directly synced to PostgreSQL.
 - **Projects (`/projects`)**: Complete evidence ledger with live demo / GitHub links, search filtering, and skill tags.
-- **AI Companion (`/companion`)**: Context-aware career mentor simulating interview talking points, resume bullet generation, and architectural advice.
+- **Career Assistant (`/companion`)**: AI-powered career mentor connected to **Google Gemini** (`gemini-2.5-flash`), grounded in the student's live PostgreSQL database (profile, skills, projects, and active Next Best Step).
 - **Profile (`/profile`)**: Student bio, track switcher, and interactive study velocity logging, persisted to PostgreSQL.
 
 ---
@@ -57,6 +57,7 @@ SkillSync replaces tutorial paralysis with an evidence-driven roadmap. It tracks
 ### Backend
 - **Node.js** + **Express**
 - **TypeScript**
+- **@google/genai** (Google Gemini API SDK)
 - **CORS** & **Dotenv**
 - RESTful JSON architecture
 
@@ -101,6 +102,9 @@ All endpoints are hosted on `http://localhost:5001/api` by default.
 
 ### Dashboard
 - `GET /api/dashboard` — Aggregated command-center payload including profile, weighted readiness score, active Next Best Step, roadmap phases, and recent projects.
+
+### Career Assistant (Gemini AI)
+- `POST /api/ai/chat` — Context-aware career mentoring powered by Google Gemini. Body: `{ message: string, history?: Array<{ role: string, content: string }> }`. Retrieves student profile, skills, projects, and active Next Best Step from PostgreSQL to construct rich system guidance.
 
 ### Health
 - `GET /api/health` — System health check.
@@ -151,8 +155,10 @@ SkillSync/
         ├── index.ts            # Express server initialization
         ├── config/
         │   └── prisma.ts       # Prisma Client singleton
-        ├── controllers/        # Profile, Skills, Projects, Dashboard
-        ├── routes/             # REST route declarations
+        ├── controllers/        # Profile, Skills, Projects, Dashboard, AI
+        ├── routes/             # REST route declarations (Profile, Skills, Projects, Dashboard, AI)
+        ├── services/
+        │   └── geminiService.ts # Gemini AI client & student context aggregator
         └── utils/
             └── readiness.ts    # Server-side readiness scoring
 ```
@@ -170,13 +176,18 @@ Copy `.env.example` to `server/.env`:
 ```bash
 cp server/.env.example server/.env
 ```
-Ensure `DATABASE_URL` matches your local PostgreSQL credentials:
+Ensure `DATABASE_URL` matches your local PostgreSQL credentials and provide your Gemini API key:
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/skillsync?schema=public"
 PORT=5001
 CLIENT_URL="http://localhost:5173"
+
+# Google Gemini API (Get a free key at https://aistudio.google.com/app/apikey)
+GEMINI_API_KEY="your_actual_gemini_api_key_here"
+GEMINI_MODEL="gemini-2.5-flash"
 ```
 *(Note: Port `5001` is used by default to prevent port conflicts with macOS ControlCenter / AirPlay on `5000`)*.
+*(Note: If `GEMINI_API_KEY` is not provided, the Career Assistant gracefully operates in guided mode, displaying instructions on how to activate live AI without breaking the application)*.
 
 ### 3. Database Migration & Seeding
 From the project root:
@@ -208,13 +219,13 @@ npm run dev:client
 
 ---
 
-## 🔮 What Should Be Built Next (Phase 3 Roadmap)
+## 🔮 What Should Be Built Next (Phase 4 Roadmap)
 
 1. **User Authentication & Authorization**:
    - Add Clerk / Supabase Auth / NextAuth with GitHub OAuth sign-in.
 2. **Automated GitHub API Ingestion**:
    - Inspect public repos, parse dependencies from `package.json`, inspect git commit history, and automatically suggest evidenced competencies.
-3. **Real Gemini AI Integration**:
-   - Connect Gemini 2.5 Flash / Pro API for dynamic Next Best Step recommendations, code reviews for evidence repositories, and personalized interview simulations.
+3. **Multi-Model Support & Voice Companion**:
+   - Add streaming audio / speech input via Gemini Live API for real-time behavioral interview mock practice.
 4. **Public Portfolio Share Link**:
    - Generate public recruiter links (`skillsync.app/@username`) with verified badge metadata.

@@ -73,7 +73,9 @@ export function calculateReadiness(
 }
 
 export function getNextBestStepForCareer(targetCareer: string) {
-  if (targetCareer.toLowerCase().includes('frontend')) {
+  const careerLower = targetCareer.toLowerCase();
+
+  if (careerLower.includes('frontend')) {
     return {
       id: "step-frontend-perf",
       targetCareer: "Frontend Engineer",
@@ -120,6 +122,114 @@ const rowVirtualizer = useVirtualizer({
   estimateSize: () => 48,
   overscan: 5,
 });`
+    };
+  }
+
+  if (careerLower.includes('cloud') || (careerLower.includes('backend') && !careerLower.includes('full-stack'))) {
+    return {
+      id: "step-cloud-docker-cicd",
+      targetCareer: "Backend / Cloud Engineer",
+      title: "Deploy Containerized Microservice with Docker & CI/CD",
+      whyRecommended: "You have strong backend logic with Express and SQL. Packaging your service into a secure, multi-stage Docker container with automated GitHub Actions testing will prove production cloud readiness.",
+      targetSkills: [
+        "Docker & Containerization",
+        "CI/CD with GitHub Actions",
+        "Cloud Deployment & Health Checks",
+        "Environment Secret Management"
+      ],
+      estimatedEffort: "5 - 7 hours",
+      impactLevel: "Critical" as const,
+      criteria: [
+        {
+          id: "be-c1",
+          title: "Write a production multi-stage Dockerfile optimizing image size below 150MB.",
+          description: "Separate build stage from runtime image, run as non-root user, and implement proper caching.",
+          completed: true
+        },
+        {
+          id: "be-c2",
+          title: "Setup GitHub Actions workflow running automated unit and integration tests on pull requests.",
+          description: "Automate test suite, linting, and docker build verification before merge.",
+          completed: false
+        },
+        {
+          id: "be-c3",
+          title: "Deploy container to cloud service (Fly.io, Railway, or AWS ECS) with zero-downtime rolling updates.",
+          description: "Configure liveness and readiness probe health endpoints.",
+          completed: false
+        }
+      ],
+      actionGuideSteps: [
+        "Step 1: Create a multi-stage Dockerfile with Node.js Alpine base.",
+        "Step 2: Add .dockerignore to exclude node_modules, logs, and sensitive .env files.",
+        "Step 3: Write .github/workflows/deploy.yml testing the test suite on every push.",
+        "Step 4: Deploy and verify production health checks."
+      ],
+      starterSnippet: `# Multi-stage Dockerfile example:
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+USER node
+CMD ["node", "dist/index.js"]`
+    };
+  }
+
+  if (careerLower.includes('ai') || careerLower.includes('ml') || careerLower.includes('intelligence')) {
+    return {
+      id: "step-rag-vector-search",
+      targetCareer: "AI Application Engineer",
+      title: "Build a RAG Pipeline with Vector Search & Embeddings",
+      whyRecommended: "Retrieval-Augmented Generation (RAG) is the gold standard for production AI apps. Connecting text embeddings with vector similarity search bridges full-stack foundations into applied AI engineering.",
+      targetSkills: [
+        "Vector Embeddings & Search",
+        "Google Gemini API Integration",
+        "PostgreSQL pgvector / Vector Indexing",
+        "Prompt Engineering & Context Assembly"
+      ],
+      estimatedEffort: "6 - 8 hours",
+      impactLevel: "Critical" as const,
+      criteria: [
+        {
+          id: "ai-c1",
+          title: "Generate vector embeddings for knowledge base documents using Gemini embedding models.",
+          description: "Chunk markdown or documentation into 500-token chunks with 10% overlap.",
+          completed: true
+        },
+        {
+          id: "ai-c2",
+          title: "Implement cosine similarity retrieval using PostgreSQL pgvector or in-memory dot product.",
+          description: "Retrieve top-K most relevant chunks given a user's natural language question.",
+          completed: false
+        },
+        {
+          id: "ai-c3",
+          title: "Assemble prompt context dynamically and stream the augmented answer back to the UI.",
+          description: "Add citation metadata indicating which document chunks grounded the response.",
+          completed: false
+        }
+      ],
+      actionGuideSteps: [
+        "Step 1: Define schema for Document and Embedding chunks.",
+        "Step 2: Generate text-embedding-004 vectors for each chunk.",
+        "Step 3: Query embeddings by cosine distance.",
+        "Step 4: Pass top-3 relevant contexts into Gemini systemInstruction."
+      ],
+      starterSnippet: `// Example vector cosine similarity:
+const topChunks = await prisma.$queryRaw\`
+  SELECT id, content, 1 - (embedding <=> \${queryEmbedding}::vector) AS similarity
+  FROM "DocumentChunk"
+  ORDER BY similarity DESC
+  LIMIT 3;
+\`;`
     };
   }
 

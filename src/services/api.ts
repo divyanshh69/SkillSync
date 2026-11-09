@@ -92,7 +92,54 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
   },
 
-  // 5. Health
+  // 5. AI Assistant
+  async sendChatMessage(
+    message: string,
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  ): Promise<{ message: string; reply: string; isMockFallback?: boolean }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 18000); // 18-second client safeguard timeout
+
+    try {
+      const res = await fetch(`${API_BASE}/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, history }),
+        signal: controller.signal
+      });
+
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(json?.error || json?.message || `HTTP error ${res.status}`);
+      }
+
+      if (!json) {
+        throw new Error('Empty response received from server');
+      }
+
+      // Handle structured { "message": "..." } or legacy aliases
+      const text = json.message || json.reply || json.data?.reply || '';
+      if (!text) {
+        throw new Error('Received an empty reply from the Career Assistant');
+      }
+
+      return {
+        message: text,
+        reply: text,
+        isMockFallback: Boolean(json.isMockFallback || json.data?.isMockFallback)
+      };
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw new Error('Request timed out while waiting for AI response. Please try again.');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  },
+
+  // 6. Health
   async checkHealth(): Promise<boolean> {
     try {
       const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });

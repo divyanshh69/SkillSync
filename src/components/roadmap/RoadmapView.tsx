@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { RoadmapPhase, Skill, SkillStatus } from '../../types';
+import { RoadmapPhase, Skill } from '../../types';
 import { StatusBadge } from '../common/Badge';
-import { Modal } from '../common/Modal';
+import { SkillModal } from './SkillModal';
 import { 
   ChevronDown, 
   ChevronUp, 
-  Check, 
-  FolderGit2
+  Check
 } from 'lucide-react';
 
 interface RoadmapViewProps {
@@ -157,76 +156,19 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
       </div>
 
       {/* Skill Detail Modal */}
-      {activeSkillModal && (
-        <Modal
-          isOpen={!!activeSkillModal}
-          onClose={() => setActiveSkillModal(null)}
-          title={activeSkillModal.name}
-          subtitle={`${activeSkillModal.category} Competency`}
-        >
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-lg bg-slate-950 border border-slate-800">
-              <div>
-                <span className="text-xs text-slate-400 block font-medium">Update Status</span>
-                <span className="text-[11px] text-slate-400">Click to change and save progress</span>
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {(['completed', 'in-progress', 'not-started'] as SkillStatus[]).map((st) => (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => {
-                      if (onSkillUpdate && activeSkillModal) {
-                        onSkillUpdate(activeSkillModal.id, { status: st });
-                        setActiveSkillModal({ ...activeSkillModal, status: st });
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      activeSkillModal.status === st
-                        ? 'bg-brand-500 text-slate-950 font-semibold'
-                        : 'bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750'
-                    }`}
-                  >
-                    {st === 'completed' ? 'Completed' : st === 'in-progress' ? 'In Progress' : 'Not Started'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {activeSkillModal.evidencedByProjectNames && activeSkillModal.evidencedByProjectNames.length > 0 ? (
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-300">
-                <span className="text-brand-300 font-medium block mb-0.5">Practiced in project(s):</span>
-                <span>{activeSkillModal.evidencedByProjectNames.join(', ')}</span>
-              </div>
-            ) : (
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-400">
-                Not yet linked to a project. When you build a project demonstrating this skill, you can link it in My Projects.
-              </div>
-            )}
-
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-              {onNavigateToProjects && (
-                <button
-                  onClick={() => {
-                    setActiveSkillModal(null);
-                    onNavigateToProjects();
-                  }}
-                  className="text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1"
-                >
-                  <FolderGit2 className="w-3.5 h-3.5" />
-                  <span>Go to My Projects</span>
-                </button>
-              )}
-              <button
-                onClick={() => setActiveSkillModal(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-md font-medium ml-auto transition-colors"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <SkillModal
+        skill={activeSkillModal}
+        onClose={() => setActiveSkillModal(null)}
+        onSkillUpdate={(skillId, updates) => {
+          if (onSkillUpdate) {
+            onSkillUpdate(skillId, updates);
+            if (activeSkillModal && updates.status) {
+              setActiveSkillModal({ ...activeSkillModal, status: updates.status });
+            }
+          }
+        }}
+        onNavigateToProjects={onNavigateToProjects}
+      />
     </div>
   );
 };
