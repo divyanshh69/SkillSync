@@ -55,7 +55,9 @@ export async function updateProfile(req: Request, res: Response) {
       hoursCompletedThisWeek,
       targetCompletionQuarter,
       handle,
-      education
+      education,
+      experienceLevel,
+      isOnboarded
     } = req.body;
 
     const updatedUser = await prisma.user.update({
@@ -68,7 +70,9 @@ export async function updateProfile(req: Request, res: Response) {
         ...(hoursCompletedThisWeek !== undefined && { hoursCompletedThisWeek: Number(hoursCompletedThisWeek) }),
         ...(targetCompletionQuarter !== undefined && { targetCompletionQuarter }),
         ...(handle !== undefined && { handle }),
-        ...(education !== undefined && { education })
+        ...(education !== undefined && { education }),
+        ...(experienceLevel !== undefined && { experienceLevel }),
+        ...(isOnboarded !== undefined && { isOnboarded: Boolean(isOnboarded) })
       }
     });
 

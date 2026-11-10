@@ -6,6 +6,7 @@ import skillsRoutes from './routes/skillsRoutes.js';
 import projectsRoutes from './routes/projectsRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import onboardingRoutes from './routes/onboardingRoutes.js';
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/skills', skillsRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -22,6 +22,8 @@ model User {
   bio                     String?
   education               String?
   targetCareer            String        @default("Full-Stack Developer")
+  experienceLevel         String?       @default("Beginner")
+  isOnboarded             Boolean       @default(false)
   weeklyGoalHours         Float         @default(15)
   hoursCompletedThisWeek  Float         @default(0)
   targetCompletionQuarter String?       @default("Q3 2026")

@@ -19,12 +19,9 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
   onSkillUpdate,
   onNavigateToProjects
 }) => {
+  const currentActivePhase = phases.find(p => p.status === 'in-progress') || phases[0];
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
-    'phase-1': false,
-    'phase-2': false,
-    'phase-3': true, // Keep current phase open by default
-    'phase-4': false,
-    'phase-5': false
+    [currentActivePhase?.id || 'phase-1']: true
   });
   const [activeSkillModal, setActiveSkillModal] = useState<Skill | null>(null);
 
@@ -45,12 +42,14 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
               My Roadmap
             </h2>
             <p className="text-sm text-slate-400 mt-0.5">
-              5 learning phases from web basics to cloud deployment.
+              5 milestone phases structured for your career journey.
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-medium text-brand-300 bg-brand-500/10 border border-brand-500/20 px-3 py-1.5 rounded-lg">
-            <span>Current: Phase 3 (Backend & APIs)</span>
+            <span>
+              Current: Phase {currentActivePhase?.phaseNumber || 1} ({currentActivePhase?.title || 'Foundations'})
+            </span>
           </div>
         </div>
       </div>

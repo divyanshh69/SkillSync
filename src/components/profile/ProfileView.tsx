@@ -4,17 +4,21 @@ import {
   GraduationCap, 
   Target, 
   Clock, 
-  Check
+  Check,
+  Sparkles,
+  RotateCcw
 } from 'lucide-react';
 
 interface ProfileViewProps {
   profile: CareerProfile;
   onUpdateProfile?: (updated: Partial<CareerProfile>) => void;
+  onStartOnboarding?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   profile,
-  onUpdateProfile
+  onUpdateProfile,
+  onStartOnboarding
 }) => {
   const [targetRole, setTargetRole] = useState(profile.targetCareer);
   const [weeklyGoal, setWeeklyGoal] = useState(profile.weeklyGoalHours);
@@ -70,6 +74,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
                 {profile.education}
               </span>
+              {profile.experienceLevel && (
+                <span className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-brand-300 text-[11px] font-medium">
+                  Level: {profile.experienceLevel}
+                </span>
+              )}
             </div>
 
             <p className="mt-2.5 text-xs text-slate-300 leading-relaxed">
@@ -78,6 +87,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Onboarding / Retake Banner */}
+      {onStartOnboarding && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-white">
+                Career Roadmap Personalization
+              </h4>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Switch your career track or update your experience level anytime.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onStartOnboarding}
+            className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-brand-300 border border-slate-700 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Retake Onboarding</span>
+          </button>
+        </div>
+      )}
 
       {/* Target Track & Study Hours */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

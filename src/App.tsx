@@ -13,9 +13,11 @@ import {
   RoadmapPhase, 
   Project, 
   NavigationTab,
-  Skill 
+  Skill,
+  OnboardingData
 } from './types';
 import { api } from './services/api';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
 // Landing Page components
 import { LandingNavbar } from './components/landing/LandingNavbar';
@@ -38,10 +40,11 @@ import { ProjectsView } from './components/projects/ProjectsView';
 import { CompanionView } from './components/companion/CompanionView';
 import { ProfileView } from './components/profile/ProfileView';
 import { AddProjectModal } from './components/projects/AddProjectModal';
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 
 export const App: React.FC = () => {
   // Navigation State
-  const [viewMode, setViewMode] = useState<'landing' | 'app'>('landing');
+  const [viewMode, setViewMode] = useState<'landing' | 'onboarding' | 'app'>('landing');
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
 
   // App Data State (initialized with demo data for instantaneous render)
@@ -188,6 +191,30 @@ export const App: React.FC = () => {
     }
   };
 
+  // Handler for completing personalized onboarding and generating a fresh roadmap
+  const handleCompleteOnboarding = async (onboardingData: OnboardingData) => {
+    try {
+      setSaveStatus('Personalizing your roadmap in database...');
+      const response = await api.submitOnboarding(onboardingData);
+      if (response) {
+        setProfile(response.profile);
+        if (response.nextBestStep) {
+          setNextStep(response.nextBestStep);
+        }
+      }
+      // Re-hydrate backend dashboard data
+      await loadDataFromBackend();
+      setViewMode('app');
+      setCurrentTab('dashboard');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setSaveStatus(`Welcome, ${onboardingData.name}! Your ${onboardingData.targetCareer} roadmap is ready.`);
+      setTimeout(() => setSaveStatus(null), 3500);
+    } catch (err: any) {
+      console.error('Failed to complete onboarding:', err);
+      throw err;
+    }
+  };
+
   // Handler for updating individual skill status and persisting to PostgreSQL
   const handleSkillUpdate = async (skillId: string, updates: Partial<Skill>) => {
     // 1. Optimistic update in phases
@@ -226,6 +253,12 @@ export const App: React.FC = () => {
 
   // Render Landing Page
   if (viewMode === 'landing') {
+    const handleStartJourney = () => {
+      setViewMode(profile.isOnboarded ? 'app' : 'onboarding');
+      setCurrentTab('dashboard');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-brand-500/30 selection:text-brand-200">
         <LandingNavbar 
@@ -234,11 +267,7 @@ export const App: React.FC = () => {
             setCurrentTab('dashboard');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          onStartJourney={() => {
-            setViewMode('app');
-            setCurrentTab('dashboard');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onStartJourney={handleStartJourney}
         />
 
         <main>
@@ -248,11 +277,7 @@ export const App: React.FC = () => {
               setCurrentTab('dashboard');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onStartJourney={() => {
-              setViewMode('app');
-              setCurrentTab('dashboard');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onStartJourney={handleStartJourney}
           />
 
           <div id="how-it-works">
@@ -278,6 +303,26 @@ export const App: React.FC = () => {
           }}
         />
       </div>
+    );
+  }
+
+  // Render Personalized Career Onboarding Flow
+  if (viewMode === 'onboarding') {
+    return (
+      <OnboardingFlow
+        onComplete={handleCompleteOnboarding}
+        onCancel={() => {
+          setViewMode('landing');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        initialData={{
+          name: profile.name === 'Alex Rivera' ? '' : profile.name,
+          education: profile.education?.includes('Washington') ? '' : profile.education,
+          targetCareer: profile.targetCareer,
+          experienceLevel: (profile.experienceLevel as any) || 'Beginner',
+          weeklyGoalHours: profile.weeklyGoalHours
+        }}
+      />
     );
   }
 
@@ -310,6 +355,32 @@ export const App: React.FC = () => {
       {/* 1. Main Dashboard Home */}
       {currentTab === 'dashboard' && (
         <div className="space-y-6">
+          {/* Personalization Prompt Banner (if not yet onboarded) */}
+          {!profile.isOnboarded && (
+            <div className="bg-gradient-to-r from-brand-500/15 via-brand-600/10 to-slate-900 border border-brand-500/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-300 shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white">
+                    Viewing Demo Account • Ready to personalize your roadmap?
+                  </h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    Complete the 1-minute career setup to generate your custom milestones and track your own progress.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewMode('onboarding')}
+                className="px-3.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
+              >
+                <span>Personalize Journey</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Welcome Section */}
           <WelcomeSection
             name={profile.name}
@@ -395,6 +466,7 @@ export const App: React.FC = () => {
             readinessPercentage: currentReadiness
           }}
           onUpdateProfile={handleUpdateProfile}
+          onStartOnboarding={() => setViewMode('onboarding')}
         />
       )}
     </DashboardLayout>

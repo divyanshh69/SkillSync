@@ -1,4 +1,4 @@
-import { CareerProfile, NextBestStep, RoadmapPhase, Project, Skill } from '../types';
+import { CareerProfile, NextBestStep, RoadmapPhase, Project, Skill, OnboardingData } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -139,7 +139,38 @@ export const api = {
     }
   },
 
-  // 6. Health
+  // 6. Onboarding
+  async submitOnboarding(data: OnboardingData): Promise<{
+    profile: CareerProfile;
+    readiness: { score: number };
+    nextBestStep: NextBestStep;
+  }> {
+    const res = await fetch(`${API_BASE}/onboarding`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.error || `HTTP error ${res.status}`);
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  async getOnboardingStatus(): Promise<{ isOnboarded: boolean; name?: string; targetCareer?: string }> {
+    const res = await fetch(`${API_BASE}/onboarding/status`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const json = await res.json();
+    return json.data;
+  },
+
+  async resetOnboarding(): Promise<void> {
+    const res = await fetch(`${API_BASE}/onboarding/reset`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+  },
+
+  // 7. Health
   async checkHealth(): Promise<boolean> {
     try {
       const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });

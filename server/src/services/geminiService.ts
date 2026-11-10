@@ -81,6 +81,7 @@ export async function buildStudentContext(userId: string) {
     user: {
       name: user.name,
       targetCareer: user.targetCareer,
+      experienceLevel: user.experienceLevel || 'Beginner',
       bio: user.bio,
       education: user.education,
       weeklyGoalHours: user.weeklyGoalHours,
@@ -131,6 +132,7 @@ You are conversing with ${user.name}, who is actively pursuing a career as a ${u
 STUDENT'S LIVE SKILLSYNC PROFILE & DATABASE CONTEXT:
 - Name: ${user.name}
 - Target Career: ${user.targetCareer}
+- Experience Level: ${user.experienceLevel}
 - Current Career Readiness: ${readinessScore}%
 - Weekly Goal: ${user.weeklyGoalHours} hours (${user.hoursCompletedThisWeek} hours logged this week)
 - Target Completion: ${user.targetCompletionQuarter || 'Q3 2026'}

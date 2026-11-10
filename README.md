@@ -14,7 +14,19 @@ SkillSync replaces tutorial paralysis with an evidence-driven roadmap. It tracks
 - **How It Works**: 3-step loop (Set Target Direction, Prove with Real Code, Take the Next Best Step).
 - **Features Grid**: Highlighting the Next Best Step algorithm, verified evidence ledger, milestone roadmaps, AI companion, and weighted readiness scoring.
 
-### 2. Demo Command Center Dashboard (PostgreSQL-Persisted)
+### 2. Personalized Career Onboarding Flow
+- **4-Step Guided Wizard**: Beginner-friendly setup before landing on the dashboard:
+  1. *About You*: Full name and education/field of study with quick-select chips (Computer Science, Self-taught, Bootcamper, Engineering, Design).
+  2. *Career Target*: 8 tailored career tracks (Full-Stack, Frontend, Backend, Data Science, AI/ML, Cybersecurity, UI/UX, or custom Other).
+  3. *Experience Level*: Adaptive baseline selection (Beginner, Some Experience, Comfortable with Basics) explaining starting pace and initial phase completion.
+  4. *Weekly Commitment*: Interactive study time picker (5, 10, 15, 20+ hrs/week) with estimated completion quarters and confirmation summary.
+- **Instant PostgreSQL Roadmap Generation**:
+  - Automatically seeds a 5-phase career-specific competency roadmap.
+  - Pre-completes Phase 1 or 2 according to experience level, accurately setting starting career readiness.
+  - Automatically provisions a career-specific high-impact **Next Best Step** with interactive criteria and starter code.
+- **Dynamic AI Grounding**: Immediately provides the Gemini Career Assistant with the student's name, field of study, experience level, and personalized roadmap.
+
+### 3. Demo Command Center Dashboard (PostgreSQL-Persisted)
 - **Target Career**: Full-Stack Developer (with customizer for Frontend, Backend/Cloud, and AI tracks).
 - **Next Best Step Hero Card**:
   - Recommendation: *Build a REST API with authentication*
@@ -73,7 +85,7 @@ SkillSync replaces tutorial paralysis with an evidence-driven roadmap. It tracks
 
 | Model | Purpose | Key Fields |
 |---|---|---|
-| `User` | Student profile & learning goals | `id`, `name`, `email`, `bio`, `targetCareer`, `weeklyGoalHours`, `hoursCompletedThisWeek` |
+| `User` | Student profile & learning goals | `id`, `name`, `email`, `bio`, `targetCareer`, `experienceLevel`, `isOnboarded`, `weeklyGoalHours`, `hoursCompletedThisWeek` |
 | `Skill` | Master catalogue of competencies | `id`, `name`, `category`, `description`, `importance` |
 | `UserSkill` | Student-to-Skill progress relationship | `userId`, `skillId`, `status` (*NOT_STARTED, IN_PROGRESS, COMPLETED*), `isProjectEvidenced`, `masteryScore`, `notes` |
 | `Project` | Deliverables submitted as proof | `id`, `userId`, `name`, `tagline`, `description`, `technologies`, `githubUrl`, `liveDemoUrl`, `status`, `metrics` |
@@ -86,6 +98,11 @@ SkillSync replaces tutorial paralysis with an evidence-driven roadmap. It tracks
 ## 🔌 API Endpoints
 
 All endpoints are hosted on `http://localhost:5001/api` by default.
+
+### Onboarding & Personalization
+- `POST /api/onboarding` — Submits student name, education, target career, experience level, and weekly study hours. Automatically generates a 5-phase career roadmap in PostgreSQL, seeds skills calibrated to experience, calculates starting readiness, and returns the personalized profile and Next Best Step.
+- `GET /api/onboarding/status` — Retrieves user onboarding status (`isOnboarded`, `name`, `targetCareer`, `experienceLevel`).
+- `POST /api/onboarding/reset` — Resets `isOnboarded` to `false` for user testing or retaking onboarding.
 
 ### Profile
 - `GET /api/profile` — Retrieve current demo student profile.
@@ -138,6 +155,7 @@ SkillSync/
 │   └── components/
 │       ├── common/             # Badges and Modal
 │       ├── landing/            # Landing page components
+│       ├── onboarding/         # 4-step personalized career wizard
 │       ├── dashboard/          # Command center, Next Best Step & Readiness
 │       ├── roadmap/            # 5-phase interactive roadmap
 │       ├── projects/           # Projects evidence ledger
@@ -155,12 +173,13 @@ SkillSync/
         ├── index.ts            # Express server initialization
         ├── config/
         │   └── prisma.ts       # Prisma Client singleton
-        ├── controllers/        # Profile, Skills, Projects, Dashboard, AI
-        ├── routes/             # REST route declarations (Profile, Skills, Projects, Dashboard, AI)
+        ├── controllers/        # Profile, Skills, Projects, Dashboard, Onboarding, AI
+        ├── routes/             # REST route declarations (Profile, Skills, Projects, Dashboard, Onboarding, AI)
         ├── services/
         │   └── geminiService.ts # Gemini AI client & student context aggregator
         └── utils/
-            └── readiness.ts    # Server-side readiness scoring
+            ├── readiness.ts    # Server-side readiness scoring
+            └── roadmapTemplates.ts # Comprehensive 5-phase roadmaps for 8 career paths
 ```
 
 ---

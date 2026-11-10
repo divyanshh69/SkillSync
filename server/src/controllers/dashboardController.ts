@@ -127,6 +127,8 @@ export async function getDashboardData(req: Request, res: Response) {
       bio: user.bio || '',
       education: user.education || '',
       targetCareer: user.targetCareer,
+      experienceLevel: user.experienceLevel || 'Beginner',
+      isOnboarded: user.isOnboarded || false,
       readinessPercentage: readiness.score,
       weeklyGoalHours: user.weeklyGoalHours,
       hoursCompletedThisWeek: user.hoursCompletedThisWeek,

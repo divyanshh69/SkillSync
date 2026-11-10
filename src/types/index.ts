@@ -73,10 +73,22 @@ export interface CareerProfile {
   bio: string;
   education: string;
   targetCareer: string;
+  experienceLevel?: string;
+  isOnboarded?: boolean;
   readinessPercentage: number;
   weeklyGoalHours: number;
   hoursCompletedThisWeek: number;
   targetCompletionQuarter: string;
+}
+
+export type ExperienceLevel = 'Beginner' | 'Some Experience' | 'Comfortable with Basics';
+
+export interface OnboardingData {
+  name: string;
+  education: string;
+  targetCareer: string;
+  experienceLevel: ExperienceLevel;
+  weeklyGoalHours: number;
 }
 
 export interface CompanionMessage {
