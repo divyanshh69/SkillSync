@@ -26,7 +26,20 @@ SkillSync replaces tutorial paralysis with an evidence-driven roadmap. It tracks
   - Automatically provisions a career-specific high-impact **Next Best Step** with interactive criteria and starter code.
 - **Dynamic AI Grounding**: Immediately provides the Gemini Career Assistant with the student's name, field of study, experience level, and personalized roadmap.
 
-### 3. Demo Command Center Dashboard (PostgreSQL-Persisted)
+### 3. GitHub Repository Analysis for Project Evidence
+- **Automated Public Repository Inspection**: Enter any public GitHub repository URL (`https://github.com/owner/repo`) to analyze technologies and extract project evidence.
+- **Deterministic Manifest & Dependency Analysis**:
+  - `package.json`: Detects React, TypeScript, Tailwind CSS, Express, Prisma, Zustand, Vitest, JWT, Axios, and more.
+  - `requirements.txt` / `pyproject.toml`: Detects Python, Flask, Django, FastAPI, Pandas, NumPy, Scikit-Learn, PyTorch, and Pytest.
+  - Root File Signatures: Detects Docker (`Dockerfile`, `docker-compose.yml`), CI/CD (`.github/workflows`), Prisma ORM (`schema.prisma`), TypeScript (`tsconfig.json`), and Vite (`vite.config.ts`).
+  - GitHub REST API: Extracts stars, primary language, topics, and verified file tree without cloning or running arbitrary code.
+- **Transparent Skill Mapping & Review**:
+  - Maps detected technologies directly to the student's roadmap competencies with clear human explanations (e.g., *"Detected 'react' in package.json dependencies"*).
+  - Review screen displays repository summary, detected files, and detected technologies.
+  - Student has full agency: can accept, adjust, or remove individual suggested skills before saving.
+  - Evidence and relationships are committed to PostgreSQL only when the student confirms and clicks "Save Project & Evidence".
+
+### 4. Demo Command Center Dashboard (PostgreSQL-Persisted)
 - **Target Career**: Full-Stack Developer (with customizer for Frontend, Backend/Cloud, and AI tracks).
 - **Next Best Step Hero Card**:
   - Recommendation: *Build a REST API with authentication*
@@ -112,10 +125,11 @@ All endpoints are hosted on `http://localhost:5001/api` by default.
 - `GET /api/skills` — Retrieve all skills with user status and project evidence lists.
 - `PATCH /api/skills/:id` — Update skill status (`completed`, `in-progress`, `not-started`), mastery score, or notes.
 
-### Projects
+### Projects & Repository Evidence
 - `GET /api/projects` — Retrieve all projects with evidenced skill names.
 - `POST /api/projects` — Submit project evidence, automatically creating skill evidence links in PostgreSQL.
 - `DELETE /api/projects/:id` — Remove a project and recalculate evidence links.
+- `POST /api/github/analyze` — Analyzes a public GitHub repository URL (`repositoryUrl`), extracts metadata, detects technologies via manifest files (`package.json`, `requirements.txt`, Dockerfiles), and returns suggested competencies mapped to the database.
 
 ### Dashboard
 - `GET /api/dashboard` — Aggregated command-center payload including profile, weighted readiness score, active Next Best Step, roadmap phases, and recent projects.
@@ -173,10 +187,11 @@ SkillSync/
         ├── index.ts            # Express server initialization
         ├── config/
         │   └── prisma.ts       # Prisma Client singleton
-        ├── controllers/        # Profile, Skills, Projects, Dashboard, Onboarding, AI
-        ├── routes/             # REST route declarations (Profile, Skills, Projects, Dashboard, Onboarding, AI)
+        ├── controllers/        # Profile, Skills, Projects, Dashboard, Onboarding, GitHub, AI
+        ├── routes/             # REST route declarations (Profile, Skills, Projects, Dashboard, Onboarding, GitHub, AI)
         ├── services/
-        │   └── geminiService.ts # Gemini AI client & student context aggregator
+        │   ├── geminiService.ts # Gemini AI client & student context aggregator
+        │   └── githubService.ts # GitHub API client, manifest analysis & deterministic skill mapping
         └── utils/
             ├── readiness.ts    # Server-side readiness scoring
             └── roadmapTemplates.ts # Comprehensive 5-phase roadmaps for 8 career paths

@@ -7,6 +7,7 @@ import projectsRoutes from './routes/projectsRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import onboardingRoutes from './routes/onboardingRoutes.js';
+import githubRoutes from './routes/githubRoutes.js';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use('/api/projects', projectsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/github', githubRoutes);
 
 // 404 handler
 app.use((req, res) => {

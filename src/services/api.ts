@@ -1,4 +1,4 @@
-import { CareerProfile, NextBestStep, RoadmapPhase, Project, Skill, OnboardingData } from '../types';
+import { CareerProfile, NextBestStep, RoadmapPhase, Project, Skill, OnboardingData, GitHubAnalysisResult } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -90,6 +90,21 @@ export const api = {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+  },
+
+  // 4b. GitHub Analysis
+  async analyzeGitHubRepo(repositoryUrl: string): Promise<GitHubAnalysisResult> {
+    const res = await fetch(`${API_BASE}/github/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repositoryUrl }),
+    });
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.error || `Failed to analyze repository (${res.status})`);
+    }
+    const json = await res.json();
+    return json.data;
   },
 
   // 5. AI Assistant

@@ -119,4 +119,26 @@ export interface CareerTrackConfig {
   nextBestStep: NextBestStep;
 }
 
+export interface SuggestedSkillItem {
+  name: string;
+  reason: string;
+  category?: string;
+}
+
+export interface GitHubAnalysisResult {
+  repository: {
+    name: string;
+    description: string;
+    url: string;
+    primaryLanguage: string;
+    stars?: number;
+    topics?: string[];
+    defaultBranch?: string;
+  };
+  technologies: string[];
+  suggestedSkills: SuggestedSkillItem[];
+  detectedFiles: string[];
+}
+
+
 
