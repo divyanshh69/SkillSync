@@ -18,7 +18,7 @@ export const demoProfile: CareerProfile = {
   weeklyGoalHours: 15,
   hoursCompletedThisWeek: 11.5,
   targetCompletionQuarter: "Target: Q3 2026 Ready"
-};
+}:
 
 export const demoNextBestStep: NextBestStep = {
   id: "step-rest-api-auth",
