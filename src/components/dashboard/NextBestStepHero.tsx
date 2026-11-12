@@ -31,16 +31,27 @@ export const NextBestStepHero: React.FC<NextBestStepHeroProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-brand-500/10 text-brand-300 border border-brand-500/20">
-              Next Best Step
+              Next Step Recommendation
             </span>
-            <span className="text-xs text-slate-400">
-              Your highest-leverage focus right now
+            {step.priority && (
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                step.priority === 'Critical' 
+                  ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30' 
+                  : step.priority === 'Very High'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+              }`}>
+                {step.priority} Priority
+              </span>
+            )}
+            <span className="text-xs text-slate-400 hidden sm:inline">
+              Personalized for your roadmap
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Estimated effort: {step.estimatedEffort || '6–8 hours'}</span>
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Estimated effort: {step.estimatedEffort || '4–6 hours'}</span>
           </div>
         </div>
 
@@ -49,18 +60,37 @@ export const NextBestStepHero: React.FC<NextBestStepHeroProps> = ({
           {step.title}
         </h3>
 
-        {/* Natural Why it matters */}
-        <p className="mt-2 text-sm text-slate-300 leading-relaxed">
-          {step.whyRecommended || 'This project will help you master backend APIs and authentication before moving to full-stack integration.'}
-        </p>
+        {/* Natural description of what to do */}
+        {step.description && step.description !== step.title && (
+          <p className="mt-1.5 text-sm font-medium text-slate-200 leading-relaxed">
+            {step.description}
+          </p>
+        )}
 
-        {/* Skills you'll practice */}
+        {/* Why this is recommended (mentor explanation) */}
+        <div className="mt-3 p-3 bg-slate-950/70 border border-slate-800 rounded-lg text-xs leading-relaxed text-slate-300 flex items-start gap-2.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-brand-400 mt-1.5 shrink-0" />
+          <div>
+            <span className="font-semibold text-brand-300 mr-1.5">Why this now:</span>
+            <span>{step.reason || step.whyRecommended}</span>
+          </div>
+        </div>
+
+        {/* Suggested practical action */}
+        {step.suggestedAction && (
+          <p className="mt-2.5 text-xs text-slate-400 leading-relaxed">
+            <span className="font-semibold text-slate-300">Suggested Action: </span>
+            <span>{step.suggestedAction}</span>
+          </p>
+        )}
+
+        {/* Skills you'll improve */}
         <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-slate-400 mr-1">Skills you'll practice:</span>
-          {step.targetSkills.map((skill, idx) => (
+          <span className="text-xs text-slate-400 mr-1">Skills you'll improve:</span>
+          {(step.relatedSkills || step.targetSkills || []).map((skill, idx) => (
             <span 
               key={idx}
-              className="text-xs px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-750"
+              className="text-xs px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium"
             >
               {skill}
             </span>
@@ -182,7 +212,7 @@ export const NextBestStepHero: React.FC<NextBestStepHeroProps> = ({
               <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs text-slate-300 flex items-start gap-2">
                 <BookOpen className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
                 <span className="text-slate-400">
-                  Tip: Keep your token expiration short (15 mins) and store refresh tokens securely.
+                  {step.whyRecommended || 'Complete each criterion to build demonstrable project evidence for your career roadmap.'}
                 </span>
               </div>
             </div>

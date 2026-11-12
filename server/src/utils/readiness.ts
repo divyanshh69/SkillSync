@@ -1,4 +1,5 @@
 import { SkillStatus } from '@prisma/client';
+import { prisma } from '../config/prisma.js';
 
 export function toFrontendStatus(dbStatus: SkillStatus | string): 'completed' | 'in-progress' | 'not-started' {
   switch (dbStatus) {
@@ -445,4 +446,666 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
 };`
   };
 }
+
+export interface DynamicNextStep {
+  id: string;
+  targetCareer: string;
+  title: string;
+  description: string;
+  reason: string;
+  whyRecommended: string;
+  relatedSkills: string[];
+  targetSkills: string[];
+  estimatedEffort: string;
+  priority: 'High' | 'Very High' | 'Critical';
+  impactLevel: 'High' | 'Very High' | 'Critical';
+  suggestedAction: string;
+  criteria: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    completed: boolean;
+  }>;
+  actionGuideSteps?: string[];
+  starterSnippet?: string;
+}
+
+interface CuratedActionProfile {
+  keywords: string[];
+  title: string;
+  description: string;
+  suggestedAction: string;
+  effort: string;
+  priority: 'High' | 'Very High' | 'Critical';
+  actionGuideSteps: string[];
+  starterSnippet: string;
+}
+
+const CURATED_ACTION_PROFILES: CuratedActionProfile[] = [
+  {
+    keywords: ['postgresql', 'postgres', 'relational', 'prisma', 'sql for data'],
+    title: 'Strengthen your PostgreSQL skills',
+    description: 'Build a small project that uses PostgreSQL to store and retrieve real application data.',
+    suggestedAction: 'Create a simple backend application with PostgreSQL and connect it to one of your existing projects.',
+    effort: '4–6 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Design a normalized relational schema with primary and foreign key constraints.',
+      'Step 2: Initialize a PostgreSQL database and configure Prisma or SQL migrations.',
+      'Step 3: Implement CRUD repository queries with transactions and table joins.',
+      'Step 4: Connect the database to an API service and verify with integration tests.'
+    ],
+    starterSnippet: `-- PostgreSQL Relational Schema Blueprint:
+CREATE TABLE "User" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE "Project" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES "User"(id) ON DELETE CASCADE,
+  title VARCHAR(200) NOT NULL,
+  status VARCHAR(50) DEFAULT 'ACTIVE'
+);`
+  },
+  {
+    keywords: ['jwt', 'authentication', 'auth', 'bcrypt', 'security architecture'],
+    title: 'Add authentication to your existing project',
+    description: 'Implement secure user registration, bcrypt password hashing, and token-based route protection.',
+    suggestedAction: 'Build an authentication flow with register and login endpoints, and protect private routes with JWT middleware.',
+    effort: '5–7 hours',
+    priority: 'Critical',
+    actionGuideSteps: [
+      'Step 1: Create user registration and login endpoints with input validation.',
+      'Step 2: Hash passwords with bcrypt (minimum 10 salt rounds) before storing.',
+      'Step 3: Issue short-lived JWT access tokens and secure httpOnly refresh tokens.',
+      'Step 4: Write authenticateToken middleware to protect private API endpoints.'
+    ],
+    starterSnippet: `// JWT Authentication Middleware Blueprint:
+import jwt from 'jsonwebtoken';
+
+export const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Authentication token required' });
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token expired or invalid' });
+    req.user = user;
+    next();
+  });
+};`
+  },
+  {
+    keywords: ['express', 'node.js & express', 'restful api', 'api design'],
+    title: 'Build a REST API with structured routing',
+    description: 'Architect resource-oriented HTTP endpoints with error handling, request validation, and clean controller routing.',
+    suggestedAction: 'Develop an Express.js API with modular routes, parameter validation, and standard HTTP status codes.',
+    effort: '5–7 hours',
+    priority: 'Critical',
+    actionGuideSteps: [
+      'Step 1: Structure route modules separating controllers, services, and route definitions.',
+      'Step 2: Implement request body validation schemas using Zod or custom middleware.',
+      'Step 3: Handle asynchronous errors with a global Express error-handling middleware.',
+      'Step 4: Write tests or an OpenAPI documentation spec for your endpoints.'
+    ],
+    starterSnippet: `// Express Modular Router Blueprint:
+import { Router } from 'express';
+const router = Router();
+
+router.get('/items', async (req, res, next) => {
+  try {
+    const items = await getItemsService();
+    res.json({ success: true, data: items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;`
+  },
+  {
+    keywords: ['react', 'component patterns', 'reactive web'],
+    title: 'Build a project using React and TypeScript',
+    description: 'Develop an interactive web application featuring custom hooks, reactive state, and accessible component primitives.',
+    suggestedAction: 'Create a reactive frontend interface with typed props, reusable components, and responsive styling.',
+    effort: '6–8 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Break UI designs into modular, reusable component hierarchies.',
+      'Step 2: Encapsulate stateful logic into custom React hooks.',
+      'Step 3: Implement loading, error, and empty states for asynchronous operations.',
+      'Step 4: Verify mobile responsiveness and keyboard accessibility.'
+    ],
+    starterSnippet: `// Custom Hook & Typed Component Blueprint:
+export function useAsyncResource<T>(fetcher: () => Promise<T>) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetcher().then(setData).finally(() => setLoading(false));
+  }, []);
+
+  return { data, loading };
+}`
+  },
+  {
+    keywords: ['typescript', 'type safety'],
+    title: 'Adopt TypeScript for type-safe development',
+    description: 'Practice static typing, interface contracts, and generics in your application to catch bugs at compile-time.',
+    suggestedAction: 'Refactor or create a module using strict TypeScript interfaces and types for API responses and components.',
+    effort: '3–5 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Configure strict compiler options in tsconfig.json.',
+      'Step 2: Define strong domain interfaces for data models and API payloads.',
+      'Step 3: Eliminate any usage and adopt generics for reusable utilities.',
+      'Step 4: Run tsc to verify zero compile-time errors.'
+    ],
+    starterSnippet: `// Strict TypeScript Domain Contract:
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+  timestamp: string;
+}`
+  },
+  {
+    keywords: ['docker', 'containerization'],
+    title: 'Containerize your application with Docker',
+    description: 'Package your application and its dependencies into a lightweight, portable container with Docker Compose.',
+    suggestedAction: 'Write a multi-stage Dockerfile and docker-compose.yml to run your app with a local database container.',
+    effort: '3–5 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Author a multi-stage Dockerfile optimizing image size with Alpine base.',
+      'Step 2: Add a .dockerignore file to exclude node_modules, logs, and secrets.',
+      'Step 3: Set up docker-compose.yml to spin up the app and PostgreSQL together.',
+      'Step 4: Verify health checks and container startup in an isolated environment.'
+    ],
+    starterSnippet: `# Multi-stage Dockerfile Blueprint:
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+CMD ["node", "dist/index.js"]`
+  },
+  {
+    keywords: ['ci/cd', 'github actions', 'pipeline'],
+    title: 'Automate testing and deployment with GitHub Actions',
+    description: 'Set up continuous integration workflows that automatically run linting and tests whenever you push code.',
+    suggestedAction: 'Create a .github/workflows test pipeline to verify pull requests and build artifacts automatically.',
+    effort: '3–4 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Create .github/workflows/ci.yml in your repository.',
+      'Step 2: Add jobs to checkout code, setup Node/Python, and install dependencies.',
+      'Step 3: Run linter, typecheck, and test commands on pull requests.',
+      'Step 4: Verify green checkmarks on GitHub PRs.'
+    ],
+    starterSnippet: `# GitHub Actions CI Blueprint:
+name: CI Quality Gate
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm test`
+  },
+  {
+    keywords: ['pandas', 'dataframe', 'data wrangling'],
+    title: 'Clean and transform real-world data with Pandas',
+    description: 'Ingest raw, messy tabular data, impute missing values, filter outliers, and engineer aggregate features.',
+    suggestedAction: 'Perform an end-to-end data cleaning workflow on a public dataset in a Jupyter notebook.',
+    effort: '4–6 hours',
+    priority: 'Critical',
+    actionGuideSteps: [
+      'Step 1: Load CSV/Parquet data into Pandas and inspect datatypes and nulls.',
+      'Step 2: Impute missing numerical and categorical values appropriately.',
+      'Step 3: Engineer at least 3 aggregated or normalized feature columns.',
+      'Step 4: Export the clean dataset with reproducible transformation steps.'
+    ],
+    starterSnippet: `# Pandas Data Cleaning Blueprint:
+import pandas as pd
+df = pd.read_csv('raw_dataset.csv')
+df['cleaned_col'] = df['raw_col'].fillna(df['raw_col'].median())
+df['feature_ratio'] = df['val_a'] / (df['val_b'] + 1e-5)`
+  },
+  {
+    keywords: ['scikit-learn', 'supervised', 'machine learning', 'predictive'],
+    title: 'Train a predictive model with Scikit-Learn',
+    description: 'Build a machine learning pipeline using Scikit-Learn with feature scaling, cross-validation, and performance metrics.',
+    suggestedAction: 'Construct a Scikit-Learn pipeline to train a classifier and evaluate its performance against baselines.',
+    effort: '5–7 hours',
+    priority: 'Critical',
+    actionGuideSteps: [
+      'Step 1: Split clean data into stratified train/test partitions.',
+      'Step 2: Construct a Pipeline with StandardScaler and OneHotEncoder.',
+      'Step 3: Train baseline model and evaluate with 5-fold cross-validation.',
+      'Step 4: Evaluate precision, recall, and ROC-AUC metrics.'
+    ],
+    starterSnippet: `# Scikit-Learn Pipeline Blueprint:
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('model', LogisticRegression(max_iter=1000))
+])
+pipeline.fit(X_train, y_train)`
+  },
+  {
+    keywords: ['pytorch', 'deep learning', 'neural'],
+    title: 'Build and train a neural network with PyTorch',
+    description: 'Implement a deep learning model with PyTorch tensors, autograd, layer architecture, and loss optimization.',
+    suggestedAction: 'Construct a PyTorch model training loop on an image or text dataset, logging loss and accuracy curves.',
+    effort: '6–8 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Subclass torch.nn.Module to define network layer architecture.',
+      'Step 2: Define forward pass with activation functions.',
+      'Step 3: Write training epoch loop with optimizer.zero_grad() and loss.backward().',
+      'Step 4: Track validation loss to check for overfitting.'
+    ],
+    starterSnippet: `# PyTorch Model Blueprint:
+import torch
+import torch.nn as nn
+
+class Classifier(nn.Module):
+    def __init__(self, in_features, classes):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_features, 64),
+            nn.ReLU(),
+            nn.Linear(64, classes)
+        )
+    def forward(self, x): return self.net(x)`
+  },
+  {
+    keywords: ['wireshark', 'snort', 'packet', 'intrusion', 'ids'],
+    title: 'Analyze network traffic and write Snort rules',
+    description: 'Inspect PCAP packet captures and translate malicious patterns into custom intrusion detection rules.',
+    suggestedAction: 'Analyze sample attack traffic in Wireshark and write two custom Snort detection signatures.',
+    effort: '4–6 hours',
+    priority: 'Critical',
+    actionGuideSteps: [
+      'Step 1: Open PCAP file in Wireshark and filter by TCP syn flags or anomalous ports.',
+      'Step 2: Isolate attacker IP and extract shell or exploit byte signatures.',
+      'Step 3: Write custom Snort alert rules with specific content and flow keywords.',
+      'Step 4: Test rules against traffic to verify zero false positives.'
+    ],
+    starterSnippet: `# Custom Snort IDS Rule Blueprint:
+alert tcp $EXTERNAL_NET any -> $HOME_NET $HTTP_PORTS (
+  msg:"EXPLOIT Web Shell Execution Attempt";
+  flow:to_server,established;
+  content:"cmd="; nocase;
+  classtype:web-application-attack;
+  sid:1000010; rev:1;
+)`
+  },
+  {
+    keywords: ['figma', 'design system', 'tokens', 'auto-layout'],
+    title: 'Create a scalable design system in Figma',
+    description: 'Build accessible UI components with auto-layout, interactive variants, and semantic design tokens.',
+    suggestedAction: 'Design atomic UI components with semantic tokens and interactive variant states in Figma.',
+    effort: '4–6 hours',
+    priority: 'High',
+    actionGuideSteps: [
+      'Step 1: Set up semantic color and typography variables in Figma.',
+      'Step 2: Build button and form components using nested auto-layout.',
+      'Step 3: Add interactive component variants (default, hover, active, disabled).',
+      'Step 4: Document developer handoff specs with token naming conventions.'
+    ],
+    starterSnippet: `// Figma Design Token Structure:
+{
+  "color": { "brand": { "primary": "#6366f1" } },
+  "spacing": { "sm": "8px", "md": "16px", "lg": "24px" }
+}`
+  }
+];
+
+/**
+ * Dynamically computes a personalized Next Best Step recommendation for a student
+ * based on their actual database records (phases, skills, projects, and evidence).
+ */
+export async function generateDynamicNextStep(userId: string): Promise<DynamicNextStep> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        userSkills: {
+          include: { skill: true }
+        },
+        projects: {
+          include: {
+            projectSkills: {
+              include: { skill: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      return getNextBestStepForCareer('Full-Stack Developer') as any;
+    }
+
+    const phases = await prisma.roadmapPhase.findMany({
+      orderBy: { phaseNumber: 'asc' },
+      include: {
+        phaseSkills: {
+          orderBy: { order: 'asc' },
+          include: {
+            skill: {
+              include: {
+                userSkills: {
+                  where: { userId }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!phases || phases.length === 0) {
+      return getNextBestStepForCareer(user.targetCareer) as any;
+    }
+
+    // Map projects and evidenced skills
+    const evidencedSkillNames = new Set<string>();
+    for (const project of user.projects) {
+      for (const ps of project.projectSkills) {
+        evidencedSkillNames.add(ps.skill.name);
+      }
+    }
+    for (const us of user.userSkills) {
+      if (us.isProjectEvidenced) {
+        evidencedSkillNames.add(us.skill.name);
+      }
+    }
+
+    // Determine current active phase
+    const inProgressPhase = phases.find(p => p.status === 'in-progress');
+    const activePhaseNumber = inProgressPhase 
+      ? inProgressPhase.phaseNumber 
+      : (phases.find(p => p.status === 'upcoming')?.phaseNumber || 1);
+
+    // Flatten all curriculum skills with enriched status
+    interface CurriculumItem {
+      phaseNumber: number;
+      phaseTitle: string;
+      skillId: string;
+      name: string;
+      category: string;
+      importance: 'Essential' | 'Recommended' | 'Advanced' | string;
+      description: string;
+      status: 'completed' | 'in-progress' | 'not-started';
+      isProjectEvidenced: boolean;
+    }
+
+    const allCurriculumSkills: CurriculumItem[] = [];
+
+    for (const phase of phases) {
+      for (const ps of phase.phaseSkills) {
+        const skill = ps.skill;
+        const uSkill = skill.userSkills[0];
+        const isEvidenced = (uSkill?.isProjectEvidenced || false) || evidencedSkillNames.has(skill.name);
+        const status = toFrontendStatus(uSkill?.status || 'NOT_STARTED');
+
+        allCurriculumSkills.push({
+          phaseNumber: phase.phaseNumber,
+          phaseTitle: phase.title,
+          skillId: skill.id,
+          name: skill.name,
+          category: skill.category,
+          importance: skill.importance,
+          description: skill.description || '',
+          status,
+          isProjectEvidenced: isEvidenced
+        });
+      }
+    }
+
+    // Evaluate Candidate Skills
+    interface CandidateScore {
+      skill: CurriculumItem;
+      score: number;
+    }
+
+    const candidates: CandidateScore[] = [];
+
+    for (const item of allCurriculumSkills) {
+      // If already completed AND evidenced in projects, it's fully conquered
+      if (item.status === 'completed' && item.isProjectEvidenced) {
+        continue;
+      }
+
+      let score = 0;
+
+      // 1. Phase Proximity
+      if (item.phaseNumber < activePhaseNumber) {
+        score += 120; // Incomplete gap in earlier phase needs remediation!
+      } else if (item.phaseNumber === activePhaseNumber) {
+        score += 100; // Current active focus phase
+      } else if (item.phaseNumber === activePhaseNumber + 1) {
+        score += 40;  // Next immediate phase
+      } else {
+        score += 10;
+      }
+
+      // 2. Importance
+      if (item.importance === 'Essential') {
+        score += 50;
+      } else if (item.importance === 'Recommended') {
+        score += 25;
+      } else {
+        score += 10;
+      }
+
+      // 3. Status momentum
+      if (item.status === 'in-progress' && !item.isProjectEvidenced) {
+        score += 55; // Underway and needs project evidence! Highest priority
+      } else if (item.status === 'completed' && !item.isProjectEvidenced) {
+        score += 45; // Theory done, now needs portfolio code proof!
+      } else if (item.status === 'not-started' && item.phaseNumber <= activePhaseNumber) {
+        score += 35; // Core milestone to start
+      } else {
+        score += 5;
+      }
+
+      // 4. Project Evidence Gap bonus (heavily favor unevidenced skills)
+      if (!item.isProjectEvidenced) {
+        score += 40;
+      } else {
+        score -= 50; // Already proven in code, deprioritize
+      }
+
+      // 5. Category Balance bonus (boost categories with zero evidence so far)
+      const hasCategoryEvidence = allCurriculumSkills.some(
+        s => s.category === item.category && s.isProjectEvidenced
+      );
+      if (!hasCategoryEvidence) {
+        score += 25;
+      }
+
+      candidates.push({ skill: item, score });
+    }
+
+    // Sort by score descending
+    candidates.sort((a, b) => b.score - a.score);
+
+    // If all skills are mastered, suggest production portfolio capstone
+    if (candidates.length === 0) {
+      return {
+        id: 'step-production-capstone',
+        targetCareer: user.targetCareer,
+        title: 'Ship a Production Portfolio Capstone',
+        description: 'Package your verified skills into a comprehensive full-scale production application deployed to cloud infrastructure.',
+        reason: 'You have completed all curriculum milestones. Shipping an end-to-end production application is your final step to job readiness.',
+        whyRecommended: 'You have completed all curriculum milestones. Shipping an end-to-end production application is your final step to job readiness.',
+        relatedSkills: ['Cloud Deployment', 'Production Architecture', 'Git & Version Control'],
+        targetSkills: ['Cloud Deployment', 'Production Architecture', 'Git & Version Control'],
+        estimatedEffort: '8–12 hours',
+        priority: 'Critical',
+        impactLevel: 'Critical',
+        suggestedAction: 'Deploy your flagship project to cloud hosting with custom domains, automated CI/CD, and live monitoring.',
+        criteria: [
+          { id: 'cap-1', title: 'Connect a live production domain with SSL encryption.', completed: true },
+          { id: 'cap-2', title: 'Automate build and deployment pipelines via GitHub Actions.', completed: false },
+          { id: 'cap-3', title: 'Add performance monitoring and health status checks.', completed: false }
+        ],
+        actionGuideSteps: [
+          'Step 1: Select your best project to promote as your flagship deliverable.',
+          'Step 2: Deploy backend and database services to cloud hosting.',
+          'Step 3: Point a custom domain and verify HTTPS.',
+          'Step 4: Add the live link to your SkillSync portfolio.'
+        ],
+        starterSnippet: `# Production Deployment Health Check:
+curl -I https://api.yourdomain.com/health`
+      };
+    }
+
+    const targetSkill = candidates[0].skill;
+
+    // Find related skills in same phase or category
+    const relatedSkills = allCurriculumSkills
+      .filter(s => s.skillId !== targetSkill.skillId && (s.phaseNumber === targetSkill.phaseNumber || s.category === targetSkill.category))
+      .slice(0, 3)
+      .map(s => s.name);
+
+    if (!relatedSkills.includes(targetSkill.name)) {
+      relatedSkills.unshift(targetSkill.name);
+    }
+
+    // Match with curated blueprint if available
+    const nameLower = targetSkill.name.toLowerCase();
+    const curatedMatch = CURATED_ACTION_PROFILES.find(p =>
+      p.keywords.some(k => nameLower.includes(k))
+    );
+
+    let title: string;
+    let description: string;
+    let reason: string;
+    let suggestedAction: string;
+    let estimatedEffort: string;
+    let priority: 'High' | 'Very High' | 'Critical';
+    let actionGuideSteps: string[];
+    let starterSnippet: string;
+
+    if (curatedMatch) {
+      title = curatedMatch.title;
+      description = curatedMatch.description;
+      suggestedAction = curatedMatch.suggestedAction;
+      estimatedEffort = curatedMatch.effort;
+      priority = curatedMatch.priority;
+      actionGuideSteps = curatedMatch.actionGuideSteps;
+      starterSnippet = curatedMatch.starterSnippet;
+
+      // Personalized reason based on exact student state
+      if (targetSkill.status === 'completed' && !targetSkill.isProjectEvidenced) {
+        reason = `${targetSkill.name} is an important competency for your ${user.targetCareer} goal, and you have not yet demonstrated it in a project.`;
+      } else if (targetSkill.status === 'in-progress') {
+        reason = `${targetSkill.name} is currently in progress for your ${user.targetCareer} goal. Completing this practical milestone will solidify your ${targetSkill.category} skills.`;
+      } else {
+        reason = `${targetSkill.name} is an essential building block for your ${user.targetCareer} roadmap in Phase ${targetSkill.phaseNumber}.`;
+      }
+    } else {
+      // Dynamic synthesis for any skill
+      const isEssential = targetSkill.importance === 'Essential';
+      priority = isEssential ? 'Critical' : 'High';
+      estimatedEffort = isEssential ? '5–7 hours' : '3–5 hours';
+
+      if (targetSkill.status === 'in-progress') {
+        title = `Complete your ${targetSkill.name} milestone`;
+        description = targetSkill.description 
+          ? `Advance your ${targetSkill.name} skills (${targetSkill.description}) with focused practical implementation.`
+          : `Complete practical exercises and implementation for ${targetSkill.name}.`;
+        reason = `${targetSkill.name} is currently in progress for your ${user.targetCareer} roadmap. Finishing it will bridge your next milestone.`;
+        suggestedAction = `Build a focused feature or module applying ${targetSkill.name} and submit it as project evidence.`;
+      } else if (targetSkill.status === 'completed' && !targetSkill.isProjectEvidenced) {
+        title = `Build project evidence for ${targetSkill.name}`;
+        description = `Create a demonstrable project proving your understanding of ${targetSkill.name}.`;
+        reason = `You have studied ${targetSkill.name} in theory, but lack project evidence in your portfolio. Demonstrating it in verifiable code will boost your career readiness.`;
+        suggestedAction = `Incorporate ${targetSkill.name} into a GitHub repository and link it to your project evidence ledger.`;
+      } else {
+        title = `Learn and apply ${targetSkill.name}`;
+        description = targetSkill.description 
+          ? `Master ${targetSkill.name}: ${targetSkill.description}`
+          : `Learn core concepts of ${targetSkill.name} and build your first practical implementation.`;
+        reason = `${targetSkill.name} is an ${targetSkill.importance.toLowerCase()} skill for Phase ${targetSkill.phaseNumber} of your ${user.targetCareer} journey.`;
+        suggestedAction = `Study ${targetSkill.name} fundamentals and create a working repository demonstrating the core concepts.`;
+      }
+
+      actionGuideSteps = [
+        `Step 1: Review ${targetSkill.name} core principles and set up a clean repository workspace.`,
+        `Step 2: Implement the primary features and architecture focusing on ${targetSkill.name}.`,
+        `Step 3: Test edge cases, handle errors gracefully, and document code.`,
+        `Step 4: Push to GitHub, add a descriptive README, and record it under My Projects.`
+      ];
+
+      starterSnippet = `// Starter Blueprint for ${targetSkill.name}
+// Initialize module and implement core logic:
+export async function initialize() {
+  console.log("Practicing ${targetSkill.name}...");
+}`;
+    }
+
+    // 3 Concrete completion criteria
+    const criteria = [
+      {
+        id: `crit-1-${targetSkill.skillId.slice(-6)}`,
+        title: `Design and scaffold the core implementation for ${targetSkill.name}.`,
+        description: 'Set up repository structure and establish core architectural patterns.',
+        completed: targetSkill.status !== 'not-started'
+      },
+      {
+        id: `crit-2-${targetSkill.skillId.slice(-6)}`,
+        title: `Build functional features and verify requirements with tests or live endpoints.`,
+        description: 'Verify primary use-cases and ensure robust error handling.',
+        completed: targetSkill.status === 'completed' || targetSkill.isProjectEvidenced
+      },
+      {
+        id: `crit-3-${targetSkill.skillId.slice(-6)}`,
+        title: `Publish code to GitHub with documentation and link it as project evidence.`,
+        description: 'Document architecture in README and submit under My Projects.',
+        completed: targetSkill.isProjectEvidenced
+      }
+    ];
+
+    return {
+      id: `step-dyn-${targetSkill.skillId.slice(-8)}`,
+      targetCareer: user.targetCareer,
+      title,
+      description,
+      reason,
+      whyRecommended: reason,
+      relatedSkills,
+      targetSkills: relatedSkills,
+      estimatedEffort,
+      priority,
+      impactLevel: priority,
+      suggestedAction,
+      criteria,
+      actionGuideSteps,
+      starterSnippet
+    };
+  } catch (error) {
+    console.error('[Recommendation Engine] Error generating dynamic next step:', error);
+    return getNextBestStepForCareer('Full-Stack Developer') as any;
+  }
+}
+
 

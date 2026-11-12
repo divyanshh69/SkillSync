@@ -45,7 +45,7 @@ export const SkillModal: React.FC<SkillModalProps> = ({
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   skill.status === st
                     ? 'bg-brand-500 text-slate-950 font-semibold'
-                    : 'bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700'
                 }`}
               >
                 {st === 'completed' ? 'Completed' : st === 'in-progress' ? 'In Progress' : 'Not Started'}

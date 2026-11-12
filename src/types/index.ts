@@ -34,6 +34,8 @@ export interface Project {
   completionDate: string;
   status: 'Completed' | 'In Development' | 'Planned';
   metrics?: string;
+  source?: 'manual' | 'github';
+  githubRepoId?: string;
 }
 
 export interface CompletionCriterion {
@@ -47,10 +49,15 @@ export interface NextBestStep {
   id: string;
   targetCareer: string;
   title: string;
+  description?: string;
+  reason?: string;
   whyRecommended: string;
+  relatedSkills?: string[];
   targetSkills: string[];
   estimatedEffort: string;
+  priority?: 'High' | 'Very High' | 'Critical';
   impactLevel: 'High' | 'Very High' | 'Critical';
+  suggestedAction?: string;
   criteria: CompletionCriterion[];
   actionGuideSteps?: string[];
   starterSnippet?: string;
@@ -75,6 +82,7 @@ export interface CareerProfile {
   targetCareer: string;
   experienceLevel?: string;
   isOnboarded?: boolean;
+  githubUsername?: string;
   readinessPercentage: number;
   weeklyGoalHours: number;
   hoursCompletedThisWeek: number;
@@ -139,6 +147,50 @@ export interface GitHubAnalysisResult {
   suggestedSkills: SuggestedSkillItem[];
   detectedFiles: string[];
 }
+
+export interface GitHubUserProfile {
+  username: string;
+  name: string;
+  avatarUrl: string;
+  bio: string;
+  htmlUrl: string;
+  publicReposCount: number;
+  followersCount: number;
+  location: string;
+  company: string;
+  blog: string;
+}
+
+export interface GitHubRepoSummary {
+  id: number | string;
+  name: string;
+  fullName: string;
+  description: string;
+  primaryLanguage: string;
+  url: string;
+  homepage: string | null;
+  stars: number;
+  forks: number;
+  topics: string[];
+  updatedAt: string;
+  isFork: boolean;
+  isAlreadyImported: boolean;
+  technologies: string[];
+  suggestedSkills: SuggestedSkillItem[];
+}
+
+export interface ImportRepoPayload {
+  repositoryUrl: string;
+  name: string;
+  tagline?: string;
+  description: string;
+  technologies?: string[] | string;
+  evidencedSkills?: string[];
+  liveDemoUrl?: string;
+  githubRepoId?: string;
+  status?: string;
+}
+
 
 
 

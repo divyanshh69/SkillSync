@@ -31,6 +31,8 @@ export async function getProjects(req: Request, res: Response) {
       githubUrl: proj.githubUrl || undefined,
       liveDemoUrl: proj.liveDemoUrl || undefined,
       status: proj.status,
+      source: proj.source,
+      githubRepoId: proj.githubRepoId || undefined,
       metrics: proj.metrics || undefined,
       completionDate: proj.completionDate || new Date(proj.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       featured: proj.featured
@@ -63,7 +65,9 @@ export async function createProject(req: Request, res: Response) {
       status,
       metrics,
       completionDate,
-      featured
+      featured,
+      source,
+      githubRepoId
     } = req.body;
 
     if (!name || !description) {
@@ -91,6 +95,8 @@ export async function createProject(req: Request, res: Response) {
         githubUrl: githubUrl?.trim() || null,
         liveDemoUrl: liveDemoUrl?.trim() || null,
         status: status || 'Completed',
+        source: source || 'manual',
+        githubRepoId: githubRepoId ? String(githubRepoId) : null,
         metrics: metrics?.trim() || null,
         completionDate: completionDate || 'Just Now',
         featured: Boolean(featured)
@@ -166,6 +172,8 @@ export async function createProject(req: Request, res: Response) {
         githubUrl: createdProject.githubUrl || undefined,
         liveDemoUrl: createdProject.liveDemoUrl || undefined,
         status: createdProject.status,
+        source: createdProject.source,
+        githubRepoId: createdProject.githubRepoId || undefined,
         metrics: createdProject.metrics || undefined,
         completionDate: createdProject.completionDate,
         featured: createdProject.featured

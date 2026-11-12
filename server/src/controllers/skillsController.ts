@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma.js';
 import { getOrCreateDemoUser } from './profileController.js';
-import { toFrontendStatus, toDbStatus } from '../utils/readiness.js';
+import { toFrontendStatus, toDbStatus, calculateReadiness, generateDynamicNextStep } from '../utils/readiness.js';
 
 export async function getSkills(req: Request, res: Response) {
   try {
@@ -116,6 +116,13 @@ export async function updateSkill(req: Request, res: Response) {
     });
     const projectNames = projectSkills.map(ps => ps.project.name);
 
+    // Calculate updated readiness & dynamic next step
+    const allUserSkills = await prisma.userSkill.findMany({
+      where: { userId: user.id }
+    });
+    const updatedReadiness = calculateReadiness(allUserSkills);
+    const updatedNextStep = await generateDynamicNextStep(user.id);
+
     return res.json({
       success: true,
       data: {
@@ -128,7 +135,9 @@ export async function updateSkill(req: Request, res: Response) {
         evidencedByProjectNames: projectNames,
         importance: skill.importance,
         masteryScore: userSkill.masteryScore,
-        notes: userSkill.notes
+        notes: userSkill.notes,
+        nextBestStep: updatedNextStep,
+        readiness: updatedReadiness
       }
     });
   } catch (error) {

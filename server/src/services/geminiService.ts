@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { prisma } from '../config/prisma.js';
-import { calculateReadiness, getNextBestStepForCareer } from '../utils/readiness.js';
+import { calculateReadiness, getNextBestStepForCareer, generateDynamicNextStep } from '../utils/readiness.js';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'model';
@@ -39,7 +39,7 @@ export async function buildStudentContext(userId: string) {
 
   // Calculate readiness & next best step based on live database records
   const readiness = calculateReadiness(user.userSkills);
-  const nextStep = getNextBestStepForCareer(user.targetCareer);
+  const nextStep = await generateDynamicNextStep(userId);
 
   // Categorize skills
   const completedSkills = user.userSkills
@@ -73,6 +73,7 @@ export async function buildStudentContext(userId: string) {
     technologies: p.technologies,
     evidencedSkills: p.projectSkills.map(ps => ps.skill.name),
     status: p.status,
+    source: p.source,
     githubUrl: p.githubUrl,
     liveDemoUrl: p.liveDemoUrl
   }));
@@ -84,6 +85,7 @@ export async function buildStudentContext(userId: string) {
       experienceLevel: user.experienceLevel || 'Beginner',
       bio: user.bio,
       education: user.education,
+      githubUsername: user.githubUsername,
       weeklyGoalHours: user.weeklyGoalHours,
       hoursCompletedThisWeek: user.hoursCompletedThisWeek,
       targetCompletionQuarter: user.targetCompletionQuarter
@@ -91,7 +93,12 @@ export async function buildStudentContext(userId: string) {
     readinessScore: readiness.score,
     nextBestStep: {
       title: nextStep.title,
+      description: nextStep.description,
+      reason: nextStep.reason,
       whyRecommended: nextStep.whyRecommended,
+      suggestedAction: nextStep.suggestedAction,
+      priority: nextStep.priority,
+      estimatedEffort: nextStep.estimatedEffort,
       targetSkills: nextStep.targetSkills,
       criteria: nextStep.criteria.map(c => `${c.title} (${c.completed ? 'COMPLETED' : 'PENDING'})`)
     },
@@ -119,8 +126,8 @@ export function buildSystemPrompt(context: Awaited<ReturnType<typeof buildStuden
 
   const projectListStr = projects.length > 0
     ? projects.map(p => 
-        `- **${p.name}** (${p.status}): ${p.tagline ? p.tagline + ' — ' : ''}${p.description}\n` +
-        `  Tech: ${p.technologies.join(', ') || 'None specified'} | Evidences: ${p.evidencedSkills.join(', ') || 'None yet'}`
+        `- **${p.name}** (${p.status}${p.source === 'github' ? ' • Verified Public GitHub Project' : ''}): ${p.tagline ? p.tagline + ' — ' : ''}${p.description}\n` +
+        `  Tech: ${p.technologies.join(', ') || 'None specified'} | Evidences: ${p.evidencedSkills.join(', ') || 'None yet'}${p.githubUrl ? ' | GitHub: ' + p.githubUrl : ''}`
       ).join('\n')
     : 'No projects added yet.';
 
@@ -133,6 +140,7 @@ STUDENT'S LIVE SKILLSYNC PROFILE & DATABASE CONTEXT:
 - Name: ${user.name}
 - Target Career: ${user.targetCareer}
 - Experience Level: ${user.experienceLevel}
+- GitHub Profile: ${user.githubUsername ? `@${user.githubUsername} (https://github.com/${user.githubUsername})` : 'Not connected yet'}
 - Current Career Readiness: ${readinessScore}%
 - Weekly Goal: ${user.weeklyGoalHours} hours (${user.hoursCompletedThisWeek} hours logged this week)
 - Target Completion: ${user.targetCompletionQuarter || 'Q3 2026'}
@@ -141,7 +149,9 @@ STUDENT'S LIVE SKILLSYNC PROFILE & DATABASE CONTEXT:
 
 CURRENT NEXT BEST STEP:
 - Title: "${nextBestStep.title}"
+- Priority & Effort: ${nextBestStep.priority} (${nextBestStep.estimatedEffort})
 - Why Recommended: ${nextBestStep.whyRecommended}
+- Suggested Action: ${nextBestStep.suggestedAction}
 - Target Skills to Prove: ${nextBestStep.targetSkills.join(', ')}
 - Completion Checklist:
   - ${criteriaStr}

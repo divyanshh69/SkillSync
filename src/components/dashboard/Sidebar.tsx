@@ -48,21 +48,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800/80 flex flex-col justify-between
+        fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between
         transition-transform duration-200 ease-in-out lg:translate-x-0
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Top: Logo & Nav */}
         <div>
           {/* Logo */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-850">
+          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
             <div 
               onClick={onExitToLanding}
               className="flex items-center gap-2.5 cursor-pointer group"
               title="Return to Landing Page"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') onExitToLanding(); }}
             >
               <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-slate-950 font-bold">
-                <Compass className="w-4 h-4" />
+                <Compass className="w-4 h-4 text-slate-950" />
               </div>
               <span className="font-bold text-base text-white tracking-tight">
                 SkillSync
@@ -73,6 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button 
               onClick={onCloseMobile}
               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 lg:hidden"
+              aria-label="Close menu"
             >
               <X className="w-4 h-4" />
             </button>
@@ -117,13 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Bottom Profile Summary */}
-        <div className="p-4 border-t border-slate-850">
+        <div className="p-4 border-t border-slate-800">
           <div 
             onClick={() => {
               onSelectTab('profile');
               onCloseMobile();
             }}
             className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-900 transition-colors cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter') { onSelectTab('profile'); onCloseMobile(); } }}
           >
             <img 
               src={profile.avatarUrl} 
@@ -140,7 +147,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <div className="mt-2 pt-2 border-t border-slate-850">
+          <div className="mt-2 pt-2 border-t border-slate-800">
             <button
               onClick={onExitToLanding}
               className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"

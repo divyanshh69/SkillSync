@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma.js';
 import { getOrCreateDemoUser } from './profileController.js';
-import { calculateReadiness, getNextBestStepForCareer, toFrontendStatus } from '../utils/readiness.js';
+import { calculateReadiness, getNextBestStepForCareer, generateDynamicNextStep, toFrontendStatus } from '../utils/readiness.js';
 
 export async function getDashboardData(req: Request, res: Response) {
   try {
@@ -111,13 +111,15 @@ export async function getDashboardData(req: Request, res: Response) {
       githubUrl: proj.githubUrl || undefined,
       liveDemoUrl: proj.liveDemoUrl || undefined,
       status: proj.status,
+      source: proj.source,
+      githubRepoId: proj.githubRepoId || undefined,
       metrics: proj.metrics || undefined,
       completionDate: proj.completionDate || new Date(proj.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       featured: proj.featured
     }));
 
-    // 6. Get Next Best Step for target career
-    const nextBestStep = getNextBestStepForCareer(user.targetCareer);
+    // 6. Get Dynamic Next Best Step based on live curriculum progress
+    const nextBestStep = await generateDynamicNextStep(user.id);
 
     // Profile formatted for frontend
     const profile = {
@@ -129,6 +131,7 @@ export async function getDashboardData(req: Request, res: Response) {
       targetCareer: user.targetCareer,
       experienceLevel: user.experienceLevel || 'Beginner',
       isOnboarded: user.isOnboarded || false,
+      githubUsername: user.githubUsername || undefined,
       readinessPercentage: readiness.score,
       weeklyGoalHours: user.weeklyGoalHours,
       hoursCompletedThisWeek: user.hoursCompletedThisWeek,
@@ -153,4 +156,23 @@ export async function getDashboardData(req: Request, res: Response) {
     });
   }
 }
+
+export async function getNextStepRecommendation(req: Request, res: Response) {
+  try {
+    const user = await getOrCreateDemoUser();
+    const nextStep = await generateDynamicNextStep(user.id);
+
+    return res.json({
+      success: true,
+      data: nextStep
+    });
+  } catch (error) {
+    console.error('Error fetching next step recommendation:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to generate next step recommendation'
+    });
+  }
+}
+
 

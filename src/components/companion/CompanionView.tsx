@@ -112,7 +112,7 @@ function renderInlineMarkdown(str: string, isAi: boolean): React.ReactNode {
           key={match.index} 
           className={`px-1 py-0.5 rounded text-[11px] font-mono ${
             isAi 
-              ? 'bg-slate-850 text-brand-300 border border-slate-750' 
+              ? 'bg-slate-900 text-brand-300 border border-slate-800' 
               : 'bg-brand-600/30 text-slate-950 font-semibold'
           }`}
         >
@@ -169,9 +169,9 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
 
   const suggestedPrompts = [
     "What should I focus on this week?",
-    "Help write resume bullets for my DevPulse project",
-    "How do JWT refresh tokens work?",
-    "What should I build next?"
+    `What projects best demonstrate skills for a ${profile.targetCareer}?`,
+    "How can I turn my project code into strong resume bullets?",
+    "Explain the technical concepts in my Next Best Step"
   ];
 
   const handleSend = async (textToSend?: string) => {
@@ -222,7 +222,7 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
       const fallbackMsg: CompanionMessage = {
         id: `assistant-${Date.now()}`,
         sender: 'ai',
-        text: `⚠️ **Unable to complete AI request**\n\n${errorMsg}\n\nPlease try again or verify that your server is running. Your database records and skills remain fully preserved!`,
+        text: `**Unable to complete AI request**\n\n${errorMsg}\n\nPlease check your server connection or API configuration and try again. Your database records and skills remain fully preserved.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         badge: 'Notice'
       };
@@ -240,8 +240,8 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 border border-brand-500/30 flex items-center justify-center text-brand-400 shadow-sm">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+            <div className="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
+              <Sparkles className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -312,7 +312,7 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
                               handleSend(action.label);
                             }
                           }}
-                          className="text-xs px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-750 text-brand-300 border border-slate-750 transition-colors flex items-center gap-1.5"
+                          className="text-xs px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-brand-300 border border-slate-800 transition-colors flex items-center gap-1.5"
                         >
                           <Lightbulb className="w-3 h-3 text-brand-400" />
                           <span>{action.label}</span>
@@ -332,7 +332,7 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
           {/* Active Thinking / Generating State */}
           {isTyping && (
             <div className="flex items-center gap-2.5 text-xs text-slate-300 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 w-fit shadow-sm">
-              <span className="w-2 h-2 bg-brand-400 rounded-full animate-pulse" />
+              <span className="w-2 h-2 bg-brand-400 rounded-full" />
               <span>Thinking with your SkillSync profile...</span>
             </div>
           )}
@@ -352,7 +352,7 @@ export const CompanionView: React.FC<CompanionViewProps> = ({
               type="button"
               disabled={isTyping}
               onClick={() => handleSend(prompt)}
-              className="text-[11px] whitespace-nowrap px-3 py-1.5 rounded-full bg-slate-850 hover:bg-slate-800 disabled:opacity-50 text-slate-300 border border-slate-750 hover:border-slate-650 transition-colors"
+              className="text-[11px] whitespace-nowrap px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors"
             >
               {prompt}
             </button>

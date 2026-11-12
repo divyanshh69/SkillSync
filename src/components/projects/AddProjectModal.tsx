@@ -11,7 +11,8 @@ import {
   AlertCircle, 
   FileCode, 
   ExternalLink,
-  Code2
+  Code2,
+  Star
 } from 'lucide-react';
 
 interface AddProjectModalProps {
@@ -241,8 +242,9 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({
                       {analysisResult.repository.primaryLanguage}
                     </span>
                     {analysisResult.repository.stars !== undefined && analysisResult.repository.stars > 0 && (
-                      <span className="text-[10px] text-amber-400">
-                        ★ {analysisResult.repository.stars}
+                      <span className="text-[10px] text-amber-400 flex items-center gap-0.5">
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <span>{analysisResult.repository.stars}</span>
                       </span>
                     )}
                   </div>
@@ -376,6 +378,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({
             <input
               type="text"
               required
+              maxLength={100}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. REST API with Authentication"
@@ -389,6 +392,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({
             </label>
             <input
               type="text"
+              maxLength={150}
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="e.g. Express API with JWT auth and Prisma"
@@ -433,6 +437,7 @@ export const AddProjectModal: React.FC<AddProjectModalProps> = ({
           </label>
           <textarea
             rows={2}
+            maxLength={1000}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Briefly describe what this project does and what you learned..."

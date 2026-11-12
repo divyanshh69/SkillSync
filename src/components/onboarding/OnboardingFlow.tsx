@@ -8,15 +8,16 @@ import {
   GraduationCap, 
   User, 
   Clock, 
-  Compass,
-  Code2,
-  Palette,
-  Database,
-  Cpu,
-  Shield,
-  Layers,
-  BarChart3,
-  Loader2
+  Compass, 
+  Code2, 
+  Palette, 
+  Database, 
+  Cpu, 
+  Shield, 
+  Layers, 
+  BarChart3, 
+  Loader2,
+  X
 } from 'lucide-react';
 
 interface OnboardingFlowProps {
@@ -186,7 +187,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
       });
     } catch (err: any) {
       console.error('Failed to submit onboarding:', err);
-      setErrorMessage(err.message || 'Something went wrong while setting up your roadmap. Please try again.');
+      setErrorMessage(err.message || 'Unable to save your personalized roadmap. Please check your connection and try again.');
       setIsSubmitting(false);
     }
   };
@@ -235,9 +236,10 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
             <span>{errorMessage}</span>
             <button 
               onClick={() => setErrorMessage(null)} 
-              className="text-rose-400 hover:text-rose-200 text-xs font-bold px-2 py-0.5"
+              className="text-rose-400 hover:text-rose-200 text-xs font-bold p-1 rounded hover:bg-rose-500/10 transition-colors"
+              aria-label="Dismiss error"
             >
-              ✕
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
@@ -267,6 +269,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                   <input
                     id="student-name"
                     type="text"
+                    maxLength={100}
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
@@ -286,6 +289,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                   <input
                     id="student-education"
                     type="text"
+                    maxLength={150}
                     value={education}
                     onChange={(e) => setEducation(e.target.value)}
                     placeholder="e.g. Computer Science student, Self-taught, Career switcher"
@@ -488,7 +492,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                       </div>
 
                       {/* Starting pace preview */}
-                      <div className="mt-3 pt-2.5 border-t border-slate-850 flex items-center gap-1.5 text-[11px] text-brand-300">
+                      <div className="mt-3 pt-2.5 border-t border-slate-800 flex items-center gap-1.5 text-[11px] text-brand-300">
                         <Sparkles className="w-3.5 h-3.5 text-brand-400 shrink-0" />
                         <span>{opt.startingPhaseNote}</span>
                       </div>

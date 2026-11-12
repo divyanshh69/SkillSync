@@ -34,11 +34,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const getPageSubtitle = (tab: NavigationTab) => {
     switch (tab) {
-      case 'dashboard': return 'Here is where you stand and what to work on next.';
-      case 'roadmap': return 'A structured learning path for your career goal.';
-      case 'projects': return 'Projects you have built to practice and demonstrate your skills.';
-      case 'companion': return 'Get practical advice on your projects, resume, and next steps.';
-      case 'profile': return 'Manage your target career and study goals.';
+      case 'dashboard': return 'Current progress and recommended next steps.';
+      case 'roadmap': return 'Structured milestone learning path for your career goal.';
+      case 'projects': return 'Deliverables and repositories demonstrating your skills.';
+      case 'companion': return 'Personalized career guidance grounded in your active progress.';
+      case 'profile': return 'Target career direction, study velocity, and GitHub integration.';
     }
   };
 
@@ -57,7 +57,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         {/* Top Header Bar */}
-        <header className="h-16 sticky top-0 z-30 bg-slate-950/90 backdrop-blur-sm border-b border-slate-850 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <header className="h-16 sticky top-0 z-30 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(true)}
@@ -86,7 +86,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Quick Demo Switcher */}
+            {/* Quick Landing Switcher */}
             <button
               onClick={onExitToLanding}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
@@ -101,6 +101,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onClick={() => onSelectTab('profile')}
               className="flex items-center gap-2 cursor-pointer p-0.5 rounded-full hover:ring-2 hover:ring-brand-500/30 transition-all"
               title="View Profile"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') onSelectTab('profile'); }}
             >
               <img 
                 src={profile.avatarUrl} 
@@ -115,6 +118,40 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto space-y-6">
           {children}
         </main>
+
+        {/* Minimal In-App Footer */}
+        <footer className="mt-auto border-t border-slate-800/80 py-5 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-400">SkillSync</span>
+              <span>•</span>
+              <span>Evidence-based career companion</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-slate-400">
+              <button 
+                type="button" 
+                onClick={() => onSelectTab('roadmap')} 
+                className="hover:text-white transition-colors"
+              >
+                Roadmap
+              </button>
+              <button 
+                type="button" 
+                onClick={() => onSelectTab('projects')} 
+                className="hover:text-white transition-colors"
+              >
+                Projects
+              </button>
+              <button 
+                type="button" 
+                onClick={() => onSelectTab('companion')} 
+                className="hover:text-white transition-colors"
+              >
+                Career Assistant
+              </button>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

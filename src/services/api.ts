@@ -1,4 +1,15 @@
-import { CareerProfile, NextBestStep, RoadmapPhase, Project, Skill, OnboardingData, GitHubAnalysisResult } from '../types';
+import { 
+  CareerProfile, 
+  NextBestStep, 
+  RoadmapPhase, 
+  Project, 
+  Skill, 
+  OnboardingData, 
+  GitHubAnalysisResult,
+  GitHubUserProfile,
+  GitHubRepoSummary,
+  ImportRepoPayload
+} from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -18,93 +29,104 @@ export interface DashboardResponse {
   recentProjects: Project[];
 }
 
+/**
+ * Robust JSON request helper that consistently surfaces structured backend error messages
+ */
+async function requestJson<T>(url: string, options?: RequestInit, fallbackMsg = 'Request failed'): Promise<T> {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => null);
+    throw new Error(errJson?.error || errJson?.message || `${fallbackMsg} (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data !== undefined ? json.data : json;
+}
+
 export const api = {
   // 1. Dashboard Aggregate
   async getDashboard(): Promise<DashboardResponse> {
-    const res = await fetch(`${API_BASE}/dashboard`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    return requestJson<DashboardResponse>(`${API_BASE}/dashboard`, undefined, 'Failed to retrieve dashboard data');
+  },
+
+  async getNextStepRecommendation(): Promise<NextBestStep> {
+    return requestJson<NextBestStep>(`${API_BASE}/dashboard/next-step`, undefined, 'Failed to retrieve next step recommendation');
   },
 
   // 2. Profile
   async getProfile(): Promise<CareerProfile> {
-    const res = await fetch(`${API_BASE}/profile`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    return requestJson<CareerProfile>(`${API_BASE}/profile`, undefined, 'Failed to retrieve profile');
   },
 
   async updateProfile(updates: Partial<CareerProfile>): Promise<CareerProfile> {
-    const res = await fetch(`${API_BASE}/profile`, {
+    return requestJson<CareerProfile>(`${API_BASE}/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
-    });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    }, 'Failed to update profile');
   },
 
   // 3. Skills
   async getSkills(): Promise<Skill[]> {
-    const res = await fetch(`${API_BASE}/skills`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    return requestJson<Skill[]>(`${API_BASE}/skills`, undefined, 'Failed to retrieve skills');
   },
 
-  async updateSkill(skillIdOrName: string, updates: Partial<Skill>): Promise<Skill> {
+  async updateSkill(skillIdOrName: string, updates: Partial<Skill>): Promise<Skill & { nextBestStep?: NextBestStep; readiness?: any }> {
     const encoded = encodeURIComponent(skillIdOrName);
-    const res = await fetch(`${API_BASE}/skills/${encoded}`, {
+    return requestJson<Skill & { nextBestStep?: NextBestStep; readiness?: any }>(`${API_BASE}/skills/${encoded}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
-    });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    }, 'Failed to update skill progress');
   },
 
   // 4. Projects
   async getProjects(): Promise<Project[]> {
-    const res = await fetch(`${API_BASE}/projects`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    return requestJson<Project[]>(`${API_BASE}/projects`, undefined, 'Failed to retrieve projects');
   },
 
   async createProject(project: Partial<Project>): Promise<Project> {
-    const res = await fetch(`${API_BASE}/projects`, {
+    return requestJson<Project>(`${API_BASE}/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),
-    });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    }, 'Failed to create project');
   },
 
   async deleteProject(id: string): Promise<void> {
     const res = await fetch(`${API_BASE}/projects/${id}`, {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.error || `Failed to delete project (${res.status})`);
+    }
   },
 
-  // 4b. GitHub Analysis
+  // 4b. GitHub Analysis & Profile Integration
   async analyzeGitHubRepo(repositoryUrl: string): Promise<GitHubAnalysisResult> {
-    const res = await fetch(`${API_BASE}/github/analyze`, {
+    return requestJson<GitHubAnalysisResult>(`${API_BASE}/github/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repositoryUrl }),
-    });
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => null);
-      throw new Error(errJson?.error || `Failed to analyze repository (${res.status})`);
-    }
-    const json = await res.json();
-    return json.data;
+    }, 'Failed to analyze repository');
+  },
+
+  async getGitHubProfile(username: string): Promise<GitHubUserProfile> {
+    const encoded = encodeURIComponent(username.trim().replace(/^@+/, ''));
+    return requestJson<GitHubUserProfile>(`${API_BASE}/github/user/${encoded}`, undefined, 'Failed to fetch GitHub profile');
+  },
+
+  async getGitHubRepositories(username: string): Promise<GitHubRepoSummary[]> {
+    const encoded = encodeURIComponent(username.trim().replace(/^@+/, ''));
+    return requestJson<GitHubRepoSummary[]>(`${API_BASE}/github/user/${encoded}/repos`, undefined, 'Failed to fetch GitHub repositories');
+  },
+
+  async importGitHubProject(payload: ImportRepoPayload): Promise<Project> {
+    return requestJson<Project>(`${API_BASE}/github/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }, 'Failed to import GitHub project');
   },
 
   // 5. AI Assistant
@@ -160,24 +182,23 @@ export const api = {
     readiness: { score: number };
     nextBestStep: NextBestStep;
   }> {
-    const res = await fetch(`${API_BASE}/onboarding`, {
+    return requestJson<{
+      profile: CareerProfile;
+      readiness: { score: number };
+      nextBestStep: NextBestStep;
+    }>(`${API_BASE}/onboarding`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const errJson = await res.json().catch(() => null);
-      throw new Error(errJson?.error || `HTTP error ${res.status}`);
-    }
-    const json = await res.json();
-    return json.data;
+    }, 'Failed to submit onboarding');
   },
 
   async getOnboardingStatus(): Promise<{ isOnboarded: boolean; name?: string; targetCareer?: string }> {
-    const res = await fetch(`${API_BASE}/onboarding/status`);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const json = await res.json();
-    return json.data;
+    return requestJson<{ isOnboarded: boolean; name?: string; targetCareer?: string }>(
+      `${API_BASE}/onboarding/status`, 
+      undefined, 
+      'Failed to retrieve onboarding status'
+    );
   },
 
   async resetOnboarding(): Promise<void> {
@@ -195,4 +216,3 @@ export const api = {
     }
   }
 };
-

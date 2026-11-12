@@ -14,13 +14,15 @@ interface ProjectsViewProps {
   availableSkills: Skill[];
   onAddProject: (newProject: Project) => void;
   onDeleteProject?: (projectId: string) => void;
+  onNavigateToProfile?: () => void;
 }
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
   projects,
   availableSkills,
   onAddProject,
-  onDeleteProject
+  onDeleteProject,
+  onNavigateToProfile
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,31 +50,76 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 font-semibold text-xs sm:text-sm transition-colors self-start sm:self-auto shrink-0 shadow-sm"
-        >
-          <Plus className="w-4 h-4 text-slate-950" />
-          <span>Add Project</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          {onNavigateToProfile && (
+            <button
+              onClick={onNavigateToProfile}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 font-semibold text-xs sm:text-sm transition-colors shadow-sm"
+            >
+              <Github className="w-4 h-4 text-slate-400" />
+              <span>Import from GitHub</span>
+            </button>
+          )}
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 font-semibold text-xs sm:text-sm transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>Add Project</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by project name, tech, or skill..."
-          className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
-        />
-      </div>
+      {projects.length > 0 && (
+        <div className="relative max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by project name, tech, or skill..."
+            className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+      )}
 
-      {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
-        <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-xl text-slate-400 text-sm">
-          No projects match your search.
+      {/* Projects Grid or Contextual Empty State */}
+      {projects.length === 0 ? (
+        <div className="p-10 text-center bg-slate-900 border border-slate-800 rounded-xl space-y-3">
+          <p className="text-sm font-semibold text-white">No projects added yet</p>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Adding projects proves your skills to recruiters. Add a project manually or connect GitHub to import your repositories.
+          </p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-semibold transition-colors"
+            >
+              <Plus className="w-4 h-4 text-slate-950" />
+              <span>Add First Project</span>
+            </button>
+            {onNavigateToProfile && (
+              <button
+                onClick={onNavigateToProfile}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors"
+              >
+                <Github className="w-4 h-4 text-slate-400" />
+                <span>Import from GitHub</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : filteredProjects.length === 0 ? (
+        <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-xl text-slate-400 text-xs space-y-2">
+          <p className="text-sm font-medium text-slate-300">No projects match "{searchQuery}"</p>
+          <p className="text-slate-500">Check your spelling or search for another technology or skill.</p>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="text-xs text-brand-400 hover:underline pt-1"
+          >
+            Clear search
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,9 +132,17 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 {/* Header with Title and Links */}
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <div>
-                    <h3 className="text-base font-bold text-white">
-                      {proj.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-white">
+                        {proj.name}
+                      </h3>
+                      {proj.source === 'github' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          <Github className="w-3 h-3 text-slate-400" />
+                          <span>GitHub</span>
+                        </span>
+                      )}
+                    </div>
                     {proj.tagline && (
                       <p className="text-xs text-brand-300 font-medium mt-0.5">
                         {proj.tagline}

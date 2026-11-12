@@ -46,7 +46,7 @@ export const RoadmapPreview: React.FC<RoadmapPreviewProps> = ({
           <div
             key={skill.id}
             onClick={() => onSkillClick && onSkillClick(skill)}
-            className="py-3 flex items-center justify-between gap-3 group cursor-pointer hover:bg-slate-850/40 px-2 rounded-lg transition-colors"
+            className="py-3 flex items-center justify-between gap-3 group cursor-pointer hover:bg-slate-800/50 px-2 rounded-lg transition-colors"
           >
             <div className="flex items-center gap-3">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-600 group-hover:bg-brand-400 transition-colors" />

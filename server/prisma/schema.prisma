@@ -24,6 +24,7 @@ model User {
   targetCareer            String        @default("Full-Stack Developer")
   experienceLevel         String?       @default("Beginner")
   isOnboarded             Boolean       @default(false)
+  githubUsername          String?
   weeklyGoalHours         Float         @default(15)
   hoursCompletedThisWeek  Float         @default(0)
   targetCompletionQuarter String?       @default("Q3 2026")
@@ -78,6 +79,8 @@ model Project {
   metrics        String?
   completionDate String?
   featured       Boolean        @default(false)
+  source         String         @default("manual") // "manual" | "github"
+  githubRepoId   String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 

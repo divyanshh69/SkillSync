@@ -57,7 +57,8 @@ export async function updateProfile(req: Request, res: Response) {
       handle,
       education,
       experienceLevel,
-      isOnboarded
+      isOnboarded,
+      githubUsername
     } = req.body;
 
     const updatedUser = await prisma.user.update({
@@ -72,7 +73,8 @@ export async function updateProfile(req: Request, res: Response) {
         ...(handle !== undefined && { handle }),
         ...(education !== undefined && { education }),
         ...(experienceLevel !== undefined && { experienceLevel }),
-        ...(isOnboarded !== undefined && { isOnboarded: Boolean(isOnboarded) })
+        ...(isOnboarded !== undefined && { isOnboarded: Boolean(isOnboarded) }),
+        ...(githubUsername !== undefined && { githubUsername: githubUsername ? String(githubUsername).trim().replace(/^@+/, '') : null })
       }
     });
 

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/prisma.js';
 import { getOrCreateDemoUser } from './profileController.js';
 import { getTemplateForCareer } from '../utils/roadmapTemplates.js';
-import { calculateReadiness, getNextBestStepForCareer } from '../utils/readiness.js';
+import { calculateReadiness, getNextBestStepForCareer, generateDynamicNextStep } from '../utils/readiness.js';
 import { SkillStatus } from '@prisma/client';
 
 export async function submitOnboarding(req: Request, res: Response) {
@@ -154,7 +154,7 @@ export async function submitOnboarding(req: Request, res: Response) {
       where: { userId: user.id }
     });
     const readiness = calculateReadiness(userSkills);
-    const nextBestStep = getNextBestStepForCareer(sanitizedCareer);
+    const nextBestStep = await generateDynamicNextStep(user.id);
 
     console.log(`[Onboarding] Successfully created roadmap with ${templatePhases.length} phases for ${sanitizedName}. Starting readiness: ${readiness.score}%`);
 

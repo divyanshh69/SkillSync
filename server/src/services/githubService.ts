@@ -1,4 +1,48 @@
 import { prisma } from '../config/prisma.js';
+import { SkillStatus } from '@prisma/client';
+
+export interface GitHubUserProfile {
+  username: string;
+  name: string;
+  avatarUrl: string;
+  bio: string;
+  htmlUrl: string;
+  publicReposCount: number;
+  followersCount: number;
+  location: string;
+  company: string;
+  blog: string;
+}
+
+export interface GitHubRepoSummary {
+  id: number | string;
+  name: string;
+  fullName: string;
+  description: string;
+  primaryLanguage: string;
+  url: string;
+  homepage: string | null;
+  stars: number;
+  forks: number;
+  topics: string[];
+  updatedAt: string;
+  isFork: boolean;
+  isAlreadyImported: boolean;
+  technologies: string[];
+  suggestedSkills: SuggestedSkillItem[];
+}
+
+export interface ImportRepoPayload {
+  repositoryUrl: string;
+  name: string;
+  tagline?: string;
+  description: string;
+  technologies?: string[] | string;
+  evidencedSkills?: string[];
+  liveDemoUrl?: string;
+  githubRepoId?: string;
+  status?: string;
+}
 
 export interface GitHubRepoMetadata {
   name: string;
@@ -600,6 +644,305 @@ export class GitHubService {
       }
       return fallbackList;
     }
+  }
+
+  /**
+   * Fetches public GitHub user profile
+   */
+  public async getUserProfile(rawUsername: string): Promise<GitHubUserProfile> {
+    const username = rawUsername.trim().replace(/^@/, '');
+    if (!username) {
+      throw new Error('Please enter a valid GitHub username.');
+    }
+
+    const apiUrl = `https://api.github.com/users/${encodeURIComponent(username)}`;
+    const res = await fetchWithTimeout(apiUrl, {
+      headers: getGitHubHeaders(false)
+    });
+
+    if (res.status === 404) {
+      throw new Error(`GitHub user '${username}' not found. Please verify the username.`);
+    }
+
+    if (res.status === 403 || res.status === 429) {
+      const remaining = res.headers.get('x-ratelimit-remaining');
+      if (remaining === '0') {
+        throw new Error('GitHub API rate limit reached. Please wait a few minutes or add a GITHUB_TOKEN in server/.env.');
+      }
+      throw new Error('Access denied by GitHub API.');
+    }
+
+    if (!res.ok) {
+      throw new Error(`GitHub API error: ${res.statusText} (${res.status})`);
+    }
+
+    const data = (await res.json()) as any;
+    return {
+      username: data.login,
+      name: data.name || data.login,
+      avatarUrl: data.avatar_url || '',
+      bio: data.bio || '',
+      htmlUrl: data.html_url,
+      publicReposCount: data.public_repos || 0,
+      followersCount: data.followers || 0,
+      location: data.location || '',
+      company: data.company || '',
+      blog: data.blog || ''
+    };
+  }
+
+  /**
+   * Fetches public repositories for a GitHub user, checking for already imported projects
+   */
+  public async getUserRepositories(rawUsername: string, userId?: string): Promise<GitHubRepoSummary[]> {
+    const username = rawUsername.trim().replace(/^@/, '');
+    if (!username) {
+      throw new Error('Please enter a valid GitHub username.');
+    }
+
+    const apiUrl = `https://api.github.com/users/${encodeURIComponent(username)}/repos?sort=updated&per_page=30&type=owner`;
+    const res = await fetchWithTimeout(apiUrl, {
+      headers: getGitHubHeaders(false)
+    });
+
+    if (res.status === 404) {
+      throw new Error(`GitHub user '${username}' not found.`);
+    }
+
+    if (res.status === 403 || res.status === 429) {
+      const remaining = res.headers.get('x-ratelimit-remaining');
+      if (remaining === '0') {
+        throw new Error('GitHub API rate limit reached. Please wait a few minutes or configure GITHUB_TOKEN.');
+      }
+      throw new Error('Access to GitHub repositories was denied.');
+    }
+
+    if (!res.ok) {
+      throw new Error(`GitHub API error: ${res.statusText} (${res.status})`);
+    }
+
+    const rawRepos = (await res.json()) as any[];
+    if (!Array.isArray(rawRepos)) {
+      return [];
+    }
+
+    // Check existing projects for this user to detect already imported repos
+    let importedUrls = new Set<string>();
+    let importedIds = new Set<string>();
+
+    if (userId) {
+      const existingProjects = await prisma.project.findMany({
+        where: { userId },
+        select: { githubUrl: true, githubRepoId: true }
+      });
+
+      importedUrls = new Set(
+        existingProjects
+          .filter(p => Boolean(p.githubUrl))
+          .map(p => p.githubUrl!.toLowerCase().replace(/\/+$/, ''))
+      );
+      importedIds = new Set(
+        existingProjects
+          .filter(p => Boolean(p.githubRepoId))
+          .map(p => String(p.githubRepoId))
+      );
+    }
+
+    // Pre-fetch all skills for quick mapping
+    const allDbSkills = await prisma.skill.findMany({
+      select: { id: true, name: true, category: true }
+    });
+
+    return rawRepos.map(repo => {
+      const normalizedUrl = (repo.html_url || '').toLowerCase().replace(/\/+$/, '');
+      const isAlreadyImported = importedUrls.has(normalizedUrl) || importedIds.has(String(repo.id));
+
+      // Extract technologies from language, topics, and description
+      const techs = new Set<string>();
+      if (repo.language) techs.add(repo.language);
+      if (Array.isArray(repo.topics)) {
+        for (const t of repo.topics) {
+          const tClean = t.toLowerCase();
+          if (tClean.includes('react')) techs.add('React');
+          else if (tClean.includes('typescript')) techs.add('TypeScript');
+          else if (tClean.includes('tailwind')) techs.add('Tailwind CSS');
+          else if (tClean.includes('node') || tClean.includes('express')) techs.add('Node.js & Express');
+          else if (tClean.includes('postgres') || tClean.includes('sql')) techs.add('PostgreSQL');
+          else if (tClean.includes('prisma')) techs.add('Prisma ORM');
+          else if (tClean.includes('docker')) techs.add('Docker');
+          else if (tClean.includes('python')) techs.add('Python');
+          else if (tClean.includes('pandas')) techs.add('Pandas');
+          else if (tClean.includes('pytorch') || tClean.includes('deep-learning')) techs.add('PyTorch');
+          else if (tClean.length > 2) {
+            techs.add(t.charAt(0).toUpperCase() + t.slice(1));
+          }
+        }
+      }
+
+      // Quick skill hints based on detected techs
+      const suggestedSkills: SuggestedSkillItem[] = [];
+      for (const tech of techs) {
+        const matchingSkill = allDbSkills.find(s => s.name.toLowerCase().includes(tech.toLowerCase()));
+        if (matchingSkill && !suggestedSkills.some(s => s.name === matchingSkill.name)) {
+          suggestedSkills.push({
+            name: matchingSkill.name,
+            reason: `Detected ${tech} in repository metadata`,
+            category: matchingSkill.category
+          });
+        }
+      }
+
+      // Default Git skill for all repos
+      const gitSkill = allDbSkills.find(s => s.name.toLowerCase().includes('git'));
+      if (gitSkill && !suggestedSkills.some(s => s.name === gitSkill.name)) {
+        suggestedSkills.push({
+          name: gitSkill.name,
+          reason: 'Git repository version control',
+          category: gitSkill.category
+        });
+      }
+
+      return {
+        id: repo.id,
+        name: repo.name,
+        fullName: repo.full_name,
+        description: repo.description || 'Public GitHub repository.',
+        primaryLanguage: repo.language || 'Code',
+        url: repo.html_url,
+        homepage: repo.homepage || null,
+        stars: repo.stargazers_count || 0,
+        forks: repo.forks_count || 0,
+        topics: repo.topics || [],
+        updatedAt: repo.updated_at,
+        isFork: Boolean(repo.fork),
+        isAlreadyImported,
+        technologies: Array.from(techs),
+        suggestedSkills
+      };
+    });
+  }
+
+  /**
+   * Imports a GitHub repository as a persistent Project in PostgreSQL,
+   * linking selected skills and updating user readiness.
+   */
+  public async importRepository(userId: string, payload: ImportRepoPayload) {
+    const rawUrl = payload.repositoryUrl || (payload as any).githubUrl;
+    if (!rawUrl || typeof rawUrl !== 'string') {
+      throw new Error('A valid repository URL is required.');
+    }
+
+    const normalizedUrl = rawUrl.trim().toLowerCase().replace(/\/+$/, '');
+
+    // Prevent duplicate imports for this user
+    const existing = await prisma.project.findFirst({
+      where: {
+        userId,
+        OR: [
+          { githubUrl: { equals: normalizedUrl, mode: 'insensitive' } },
+          ...(payload.githubRepoId ? [{ githubRepoId: String(payload.githubRepoId) }] : [])
+        ]
+      }
+    });
+
+    if (existing) {
+      throw new Error(`The repository "${payload.name || existing.name}" has already been imported into your projects.`);
+    }
+
+    // Normalize technologies to string array
+    const techsArray: string[] = Array.isArray(payload.technologies)
+      ? payload.technologies
+      : typeof payload.technologies === 'string'
+      ? payload.technologies.split(',').map(t => t.trim()).filter(Boolean)
+      : [];
+
+    // Create the Project in PostgreSQL
+    const createdProject = await prisma.project.create({
+      data: {
+        userId,
+        name: payload.name.trim(),
+        tagline: payload.tagline?.trim() || null,
+        description: payload.description?.trim() || 'Imported from public GitHub repository.',
+        technologies: techsArray,
+        githubUrl: rawUrl.trim(),
+        liveDemoUrl: payload.liveDemoUrl?.trim() || null,
+        status: payload.status || 'Completed',
+        source: 'github',
+        githubRepoId: payload.githubRepoId ? String(payload.githubRepoId) : null,
+        completionDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      }
+    });
+
+    // Link evidenced skills in PostgreSQL
+    const linkedSkillNames: string[] = [];
+    if (Array.isArray(payload.evidencedSkills) && payload.evidencedSkills.length > 0) {
+      for (const skillItem of payload.evidencedSkills) {
+        const skill = await prisma.skill.findFirst({
+          where: {
+            OR: [
+              { id: skillItem },
+              { name: skillItem }
+            ]
+          }
+        });
+
+        if (skill) {
+          // Link ProjectSkill
+          await prisma.projectSkill.upsert({
+            where: {
+              projectId_skillId: {
+                projectId: createdProject.id,
+                skillId: skill.id
+              }
+            },
+            update: {},
+            create: {
+              projectId: createdProject.id,
+              skillId: skill.id
+            }
+          });
+
+          // Update UserSkill to isProjectEvidenced: true
+          await prisma.userSkill.upsert({
+            where: {
+              userId_skillId: {
+                userId,
+                skillId: skill.id
+              }
+            },
+            update: {
+              isProjectEvidenced: true,
+              status: SkillStatus.IN_PROGRESS
+            },
+            create: {
+              userId,
+              skillId: skill.id,
+              status: SkillStatus.IN_PROGRESS,
+              isProjectEvidenced: true,
+              masteryScore: 65
+            }
+          });
+
+          linkedSkillNames.push(skill.name);
+        }
+      }
+    }
+
+    return {
+      id: createdProject.id,
+      name: createdProject.name,
+      tagline: createdProject.tagline || '',
+      description: createdProject.description,
+      technologies: createdProject.technologies,
+      evidencedSkills: linkedSkillNames,
+      githubUrl: createdProject.githubUrl || undefined,
+      liveDemoUrl: createdProject.liveDemoUrl || undefined,
+      status: createdProject.status,
+      source: createdProject.source,
+      githubRepoId: createdProject.githubRepoId || undefined,
+      completionDate: createdProject.completionDate,
+      featured: createdProject.featured
+    };
   }
 }
 

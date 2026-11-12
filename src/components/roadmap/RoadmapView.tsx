@@ -75,7 +75,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
               {/* Phase Header */}
               <div 
                 onClick={() => togglePhase(phase.id)}
-                className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-850/50 transition-colors"
+                className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer hover:bg-slate-800/40 transition-colors"
               >
                 <div className="flex items-start sm:items-center gap-3.5">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${

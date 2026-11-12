@@ -1,24 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { CareerProfile } from '../../types';
+import { CareerProfile, Skill, Project } from '../../types';
 import { 
   GraduationCap, 
   Target, 
   Clock, 
-  Check,
-  Sparkles,
-  RotateCcw
+  Check, 
+  Sparkles, 
+  RotateCcw,
+  Github
 } from 'lucide-react';
+import { GitHubIntegrationSection } from './GitHubIntegrationSection';
 
 interface ProfileViewProps {
   profile: CareerProfile;
+  availableSkills?: Skill[];
+  existingProjects?: Project[];
   onUpdateProfile?: (updated: Partial<CareerProfile>) => void;
   onStartOnboarding?: () => void;
+  onProjectImported?: (project: Project) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
   profile,
+  availableSkills = [],
+  existingProjects = [],
   onUpdateProfile,
-  onStartOnboarding
+  onStartOnboarding,
+  onProjectImported
 }) => {
   const [targetRole, setTargetRole] = useState(profile.targetCareer);
   const [weeklyGoal, setWeeklyGoal] = useState(profile.weeklyGoalHours);
@@ -31,12 +39,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setHoursDone(profile.hoursCompletedThisWeek);
   }, [profile.targetCareer, profile.weeklyGoalHours, profile.hoursCompletedThisWeek]);
 
-  const careerTracks = [
+  const defaultCareerTracks = [
     "Full-Stack Developer",
-    "Frontend Engineer",
-    "Backend / Cloud Engineer",
-    "AI Application Engineer"
+    "Frontend Developer",
+    "Backend Developer",
+    "Data Scientist",
+    "AI/ML Engineer",
+    "Cybersecurity Analyst",
+    "UI/UX Designer"
   ];
+
+  const careerTracks = Array.from(new Set([
+    ...defaultCareerTracks,
+    ...(profile.targetCareer ? [profile.targetCareer] : [])
+  ]));
 
   const handleSave = () => {
     if (onUpdateProfile) {
@@ -48,6 +64,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
+  };
+
+  const handleGitHubUsernameSaved = (username: string) => {
+    if (onUpdateProfile) {
+      onUpdateProfile({
+        githubUsername: username
+      });
+    }
   };
 
   return (
@@ -62,9 +86,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           />
 
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-white tracking-tight">
-              {profile.name}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                {profile.name}
+              </h2>
+              {profile.githubUsername && (
+                <a
+                  href={`https://github.com/${profile.githubUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-mono transition-colors"
+                >
+                  <Github className="w-3 h-3 text-slate-400" />
+                  <span>@{profile.githubUsername}</span>
+                </a>
+              )}
+            </div>
+
             <p className="text-xs text-slate-400 font-mono mt-0.5">
               {profile.handle}
             </p>
@@ -107,13 +145,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <button
             type="button"
             onClick={onStartOnboarding}
-            className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-brand-300 border border-slate-700 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shrink-0"
+            className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-brand-300 border border-slate-700 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Retake Onboarding</span>
           </button>
         </div>
       )}
+
+      {/* GitHub Integration & Repositories Section */}
+      <GitHubIntegrationSection
+        initialUsername={profile.githubUsername}
+        availableSkills={availableSkills}
+        existingProjects={existingProjects}
+        onProjectImported={onProjectImported}
+        onUsernameSaved={handleGitHubUsernameSaved}
+      />
 
       {/* Target Track & Study Hours */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -177,13 +224,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setHoursDone(prev => Math.max(0, prev - 1))}
-                    className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold flex items-center justify-center text-xs"
+                    className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold flex items-center justify-center text-xs"
                   >
                     -1h
                   </button>
                   <button
                     onClick={() => setHoursDone(prev => prev + 1)}
-                    className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold flex items-center justify-center text-xs"
+                    className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold flex items-center justify-center text-xs"
                   >
                     +1h
                   </button>

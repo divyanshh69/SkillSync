@@ -17,7 +17,7 @@ import {
   OnboardingData
 } from './types';
 import { api } from './services/api';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 // Landing Page components
 import { LandingNavbar } from './components/landing/LandingNavbar';
@@ -234,7 +234,10 @@ export const App: React.FC = () => {
     if (isConnectedToBackend) {
       try {
         setSaveStatus(`Updating skill...`);
-        await api.updateSkill(skillId, updates);
+        const result = await api.updateSkill(skillId, updates);
+        if (result?.nextBestStep) {
+          setNextStep(result.nextBestStep);
+        }
         setSaveStatus('Skill progress saved!');
         setTimeout(() => setSaveStatus(null), 2000);
       } catch (err) {
@@ -347,7 +350,7 @@ export const App: React.FC = () => {
       {/* Toast Notification Banner for Database Sync */}
       {saveStatus && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 border border-brand-500/40 text-brand-300 text-xs font-semibold shadow-2xl shadow-black/80 animate-fade-in">
-          <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
+          <CheckCircle2 className="w-3.5 h-3.5 text-brand-400 shrink-0" />
           <span>{saveStatus}</span>
         </div>
       )}
@@ -357,23 +360,23 @@ export const App: React.FC = () => {
         <div className="space-y-6">
           {/* Personalization Prompt Banner (if not yet onboarded) */}
           {!profile.isOnboarded && (
-            <div className="bg-gradient-to-r from-brand-500/15 via-brand-600/10 to-slate-900 border border-brand-500/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-fade-in">
+            <div className="bg-slate-900 border border-brand-500/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-fade-in">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-300 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-white">
                     Viewing Demo Account • Ready to personalize your roadmap?
                   </h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">
+                  <p className="text-[11px] text-slate-400 mt-0.5">
                     Complete the 1-minute career setup to generate your custom milestones and track your own progress.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setViewMode('onboarding')}
-                className="px-3.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-sm"
               >
                 <span>Personalize Journey</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -442,6 +445,7 @@ export const App: React.FC = () => {
           availableSkills={allSkills}
           onAddProject={handleAddProject}
           onDeleteProject={handleDeleteProject}
+          onNavigateToProfile={() => setCurrentTab('profile')}
         />
       )}
 
@@ -465,8 +469,18 @@ export const App: React.FC = () => {
             ...profile,
             readinessPercentage: currentReadiness
           }}
+          availableSkills={allSkills}
+          existingProjects={projects}
           onUpdateProfile={handleUpdateProfile}
           onStartOnboarding={() => setViewMode('onboarding')}
+          onProjectImported={async (newProj) => {
+            // Optimistically add to projects
+            setProjects(prev => [newProj, ...prev]);
+            // Refresh full dashboard state (readiness, next best step, roadmap) from PostgreSQL
+            await loadDataFromBackend();
+            setSaveStatus(`Imported ${newProj.name} from GitHub!`);
+            setTimeout(() => setSaveStatus(null), 3000);
+          }}
         />
       )}
     </DashboardLayout>
